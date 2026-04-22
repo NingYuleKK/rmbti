@@ -4,6 +4,12 @@ const path = require("path");
 const config = require("./data");
 const engine = require("./engine");
 
+const indexHtml = fs.readFileSync(path.resolve(__dirname, "index.html"), "utf8");
+const html2canvasUrl = indexHtml.match(/src="([^"]*html2canvas[^"]*)"/)?.[1];
+
+assert.equal(html2canvasUrl, "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+assert.ok(!/\s/.test(html2canvasUrl), "html2canvas CDN URL must not contain whitespace");
+
 const allA = Array(config.questions.length).fill(0);
 const allAResult = engine.scoreAnswers(config, allA);
 
