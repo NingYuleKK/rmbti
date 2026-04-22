@@ -18,9 +18,19 @@
 
 HTML + CSS + JavaScript，配置驱动，便于后续接入业务系统。
 
+## 本地运行
+
+直接用浏览器打开 `src/index.html`。
+
+计分引擎可用 Node 做轻量验收：
+
+```bash
+node src/engine.test.js
+```
+
 ## 项目状态
 
 - [x] PRD v1.0
-- [ ] 美术规范确认
-- [ ] H5 开发
+- [x] 美术规范确认
+- [x] H5 开发
 - [ ] 验收
