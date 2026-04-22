@@ -7,7 +7,9 @@
     view: "home",
     currentQuestionIndex: 0,
     answers: Array(config.questions.length).fill(null),
-    result: null
+    result: null,
+    isTransitioning: false,
+    isSharing: false
   };
 
   const pad = (value) => String(value).padStart(2, "0");
@@ -32,16 +34,24 @@
     setView("question");
   };
 
-  const choose = (optionIndex) => {
+  const choose = (optionIndex, optionButton) => {
+    if (state.isTransitioning) return;
+    state.isTransitioning = true;
     state.answers[state.currentQuestionIndex] = optionIndex;
-    if (state.currentQuestionIndex < config.questions.length - 1) {
-      state.currentQuestionIndex += 1;
-      render();
-      return;
-    }
-    state.result = engine.scoreAnswers(config, state.answers);
-    setView("loading");
-    window.setTimeout(() => setView("result"), 1700);
+    optionButton?.classList.add("is-picked");
+    optionButton?.closest(".question-panel")?.classList.add("is-exiting");
+
+    window.setTimeout(() => {
+      state.isTransitioning = false;
+      if (state.currentQuestionIndex < config.questions.length - 1) {
+        state.currentQuestionIndex += 1;
+        render();
+        return;
+      }
+      state.result = engine.scoreAnswers(config, state.answers);
+      setView("loading");
+      window.setTimeout(() => setView("result"), 1700);
+    }, 180);
   };
 
   const back = () => {
@@ -57,9 +67,17 @@
     app.innerHTML = `
       <section class="screen home-screen">
         <div class="ambient-card" aria-hidden="true">
-          <div class="mini-card king-card"><span>KING</span></div>
-          <div class="mini-card deep-card"><span>DEEP</span></div>
-          <div class="mini-card myth-card"><span>MYTH</span></div>
+          ${config.homeCardIds
+            .map((id) => {
+              const item = config.primary[id];
+              return `
+                <div class="mini-card ${id}-card" style="--card-bg: ${item.color};">
+                  <img src="${item.imageSrc}" alt="" loading="eager" />
+                  <span>${item.code}</span>
+                </div>
+              `;
+            })
+            .join("")}
         </div>
         <div class="home-copy">
           <p class="eyebrow">RMBTI ORACLE</p>
@@ -113,7 +131,11 @@
     app.innerHTML = `
       <section class="screen loading-screen">
         <div class="loader-card">
-          <div class="card-orbit" aria-hidden="true"></div>
+          <div class="flip-loader" aria-hidden="true">
+            <div class="flip-loader-card">
+              <span>RMBTI</span>
+            </div>
+          </div>
           <p class="eyebrow">DRAWING YOUR CARD</p>
           <h2>正在为你翻牌……</h2>
           <p>读取你出手时最像自己的那一面。</p>
@@ -128,6 +150,30 @@
       .map((id) => `<li><span>${defs[id].name}</span><strong>${scores[id]}</strong></li>`)
       .join("");
 
+  const mirrorMarkup = (result) => `
+    <div class="mirror-pills">
+      ${result.mirrorDetails.map((item) => `<span>${item.tag}</span>`).join("")}
+    </div>
+    <p>${result.mirrorSentence}</p>
+  `;
+
+  const shareCardMarkup = (result, primary) => `
+    <section id="share-card" class="share-card" style="--card-color: ${primary.color}; --card-accent: ${primary.accent};">
+      <div class="share-card-inner">
+        <p class="share-brand">RMBTI 人民币人格测试</p>
+        <img class="share-card-image" src="${primary.imageSrc}" alt="${primary.name} ${primary.code} 卡牌" />
+        <div class="share-copy">
+          <h2>${result.combinationName}</h2>
+          <p>${primary.sentence}</p>
+        </div>
+        <div class="qr-placeholder">
+          <span></span>
+          <strong>扫码测你的老板人格</strong>
+        </div>
+      </div>
+    </section>
+  `;
+
   const renderResult = () => {
     const result = state.result || engine.scoreAnswers(config, state.answers);
     const primary = config.primary[result.primaryId];
@@ -138,8 +184,7 @@
         <article class="result-card">
           <div class="oracle-card">
             <div class="card-frame">
-              <div class="card-sigil">${primary.name}</div>
-              <div class="card-code">${primary.code}</div>
+              <img src="${primary.imageSrc}" alt="${primary.name} ${primary.code} 卡牌" />
             </div>
           </div>
           <div class="result-copy">
@@ -165,7 +210,7 @@
             </section>
             <section class="mirror-block">
               <h2>镜面标签</h2>
-              <p>${result.mirrorSentence}</p>
+              ${mirrorMarkup(result)}
             </section>
             <div class="score-grid">
               <div>
@@ -177,11 +222,64 @@
                 <ol>${scoreRows(config.secondary, result.secondaryRanking, result.secondaryScores)}</ol>
               </div>
             </div>
-            <button class="primary-button" type="button" data-action="reset">再测一次</button>
+            <div class="result-actions">
+              <button class="primary-button" type="button" data-action="share" ${state.isSharing ? "disabled" : ""}>${state.isSharing ? "生成中…" : "分享"}</button>
+              <button class="ghost-button" type="button" data-action="reset">再测一次</button>
+            </div>
           </div>
+          ${shareCardMarkup(result, primary)}
         </article>
       </section>
     `;
+  };
+
+  const waitForShareImages = async (shareCard) => {
+    const images = [...shareCard.querySelectorAll("img")];
+    await Promise.all(
+      images.map((image) => {
+        if (image.complete) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+          image.addEventListener("load", resolve, { once: true });
+          image.addEventListener("error", reject, { once: true });
+        });
+      })
+    );
+  };
+
+  const downloadShareCard = async () => {
+    const shareCard = document.querySelector("#share-card");
+    if (!shareCard || state.isSharing) return;
+    if (!window.html2canvas) {
+      window.alert("分享卡生成工具还没有加载完成，请稍后再试。");
+      return;
+    }
+
+    state.isSharing = true;
+    render();
+
+    try {
+      const activeShareCard = document.querySelector("#share-card");
+      await waitForShareImages(activeShareCard);
+      const canvas = await window.html2canvas(activeShareCard, {
+        backgroundColor: null,
+        scale: 1,
+        useCORS: true,
+        width: 750,
+        height: 1334
+      });
+      const link = document.createElement("a");
+      link.download = `rmbti-${state.result.primaryId}-${state.result.secondaryId}.png`;
+      link.href = canvas.toDataURL("image/png");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      window.alert("分享卡生成失败，请刷新后重试。");
+      console.error(error);
+    } finally {
+      state.isSharing = false;
+      render();
+    }
   };
 
   const render = () => {
@@ -198,7 +296,8 @@
     if (actionTarget?.dataset.action === "start") start();
     if (actionTarget?.dataset.action === "back") back();
     if (actionTarget?.dataset.action === "reset") reset();
-    if (optionTarget) choose(Number(optionTarget.dataset.option));
+    if (actionTarget?.dataset.action === "share") downloadShareCard();
+    if (optionTarget) choose(Number(optionTarget.dataset.option), optionTarget);
   });
 
   render();

@@ -73,8 +73,14 @@
     if (!tones.length) {
       return "你这次更像是把出手藏在场子细节里的人，动静不一定大，但每一步都有自己的理由。";
     }
-    return `你的镜面标签是「${tags.join(" / ")}」。${tones.join("；")}。`;
+    return tones.join("；") + "。";
   };
+
+  const buildMirrorDetails = (config, tags) =>
+    tags.map((tag) => ({
+      tag,
+      tone: config.mirrorTagTone[tag] || "这是你在场子里留下的一种细节信号"
+    }));
 
   const scoreAnswers = (config, answers) => {
     const primaryScores = zeroScores(config.primaryOrder);
@@ -137,6 +143,7 @@
       primaryRanking: sortByScore(config.primaryOrder, primaryScores),
       secondaryRanking: sortByScore(config.secondaryOrder, secondaryScores),
       mirrorTags,
+      mirrorDetails: buildMirrorDetails(config, mirrorTags),
       combinationName: `${config.primary[primaryId].name}·${config.secondary[secondaryId].name}`,
       combinationSentence: buildCombinationSentence(config, primaryId, secondaryId),
       mirrorSentence: buildMirrorSentence(config, mirrorTags)
