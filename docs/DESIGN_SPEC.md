@@ -86,3 +86,25 @@
 | 神话 MYTH | 深紫/星空 | 史诗、光晕、造神 |
 | 典藏 RARE | 冷银/深灰 | 稀有、冷峻、限量 |
 | 绝杀 CLUTCH | 深橙/暗金 | 压线、终结、最后一击 |
+
+---
+
+## 六、Phase 2 卡牌图片路径映射表
+
+为支持 Phase 2 结果页真实卡牌显示与分享卡生成，前端 `data.js` 中需配置以下图片路径映射：
+
+| 人格代号 | 中文名 | 对应图片路径 |
+|---|---|---|
+| `KING` | 君临 | `assets/cards/card_king.webp` |
+| `DEEP` | 深情 | `assets/cards/card_deep.webp` |
+| `SAVE-R` | 逆转 | `assets/cards/card_saver.webp` |
+| `CTRL` | 掌盘 | `assets/cards/card_ctrl.webp` |
+| `LOYAL` | 长情 | `assets/cards/card_loyal.webp` |
+| `MYTH` | 神话 | `assets/cards/card_myth.webp` |
+| `RARE` | 典藏 | `assets/cards/card_rare.webp` |
+| `CLUTCH` | 绝杀 | `assets/cards/card_clutch.webp` |
+
+> **注意**：
+> 1. 所有图片均采用 `.webp` 格式以优化加载速度。
+> 2. 尺寸比例统一为 2:3 竖版。
+> 3. 在前端渲染时，需确保图片容器（如 `oracle-card`）设置了合适的 `object-fit: cover` 或按比例缩放，以防图片变形。
