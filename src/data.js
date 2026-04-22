@@ -12,6 +12,7 @@
       keywords: ["偏爱", "私密", "例外"],
       color: "#0D1B2A",
       accent: "#C93A4E",
+      imageSrc: "../assets/cards/card_deep.webp",
       long: "你在意的不是全场有多吵，而是某个重要的人是否把你从人群里单独认出来。你愿意出手，是为了确认那束光真的只照向你。",
       highlight: "TA 在热闹里单独点到你，或者用一句别人接不上的话回应你。",
       turnoff: "你最受不了自己和别人没有区别，尤其是对方转身又去逢迎别人。"
@@ -25,6 +26,7 @@
       keywords: ["悬念", "翻盘", "拯救"],
       color: "#3D0000",
       accent: "#D5A33A",
+      imageSrc: "../assets/cards/card_saver.webp",
       long: "你天然会被危机点吸引。越是局面要塌、倒计时越近，你越想证明自己不是旁观者，而是那个能把结局重新写一遍的人。",
       highlight: "眼看要输的局，因为你一笔下去重新活过来。",
       turnoff: "明明有机会扳回来，系统、人和场子却没有任何一个接住。"
@@ -38,6 +40,7 @@
       keywords: ["主导", "操盘", "指令感"],
       color: "#0D2B1A",
       accent: "#BFA65A",
+      imageSrc: "../assets/cards/card_ctrl.webp",
       long: "你喜欢的不是单点热闹，而是场子的方向感开始响应你。你出手之后，节奏、路线、气氛都该变得更清晰。",
       highlight: "大家开始默认关键节点要看你的意思，局势按你的路线走。",
       turnoff: "你想带节奏时，所有人却各玩各的，没人进入同一个盘面。"
@@ -51,6 +54,7 @@
       keywords: ["陪伴", "沉淀", "年轮"],
       color: "#3A2414",
       accent: "#C7832C",
+      imageSrc: "../assets/cards/card_loyal.webp",
       long: "你不急着用一次大动静证明自己。你更在意很多个夜晚之后，这里是否还留下你的名字、习惯和位置。",
       highlight: "过了一阵子再回来，场子里还保留着你的名字和痕迹。",
       turnoff: "你断断续续陪了很久，最后却什么专属、名字和痕迹都没留下。"
@@ -64,6 +68,7 @@
       keywords: ["名场面", "故事", "电影感"],
       color: "#211238",
       accent: "#9F75FF",
+      imageSrc: "../assets/cards/card_myth.webp",
       long: "你最在意的是一笔钱能不能让普通时刻升级成故事。你不是只要贵，你要的是以后大家还会提起那一幕。",
       highlight: "一个普通房间被你点成全场记住的名场面。",
       turnoff: "画面看着挺贵，实际没有故事，也没有任何以后会被讲起的瞬间。"
@@ -77,6 +82,7 @@
       keywords: ["唯一", "限量", "印记"],
       color: "#20242B",
       accent: "#CBD5E1",
+      imageSrc: "../assets/cards/card_rare.webp",
       long: "你对稀缺和专属非常敏感。真正让你觉得值的，是别人拿不到、复制不了、过了这个节点就不会再有的身份印记。",
       highlight: "只此一份、只有你拿到的编号、徽章、身份或印记。",
       turnoff: "你以为拿到的是唯一，结果转头发现人手一份。"
@@ -90,6 +96,7 @@
       keywords: ["高位", "显圣", "全场目光"],
       color: "#0A0A0F",
       accent: "#D4AF37",
+      imageSrc: "../assets/cards/card_king.webp",
       long: "你要的是存在感被集体承认。你不一定需要解释自己是谁，场子的反应应该替你完成介绍。",
       highlight: "你一出现，全场先静一秒，目光自然往你这里聚。",
       turnoff: "你进场时没有像样的欢迎，甚至像没人记得你。"
@@ -103,6 +110,7 @@
       keywords: ["压线", "收官", "一锤定音"],
       color: "#3A1A05",
       accent: "#F59E0B",
+      imageSrc: "../assets/cards/card_clutch.webp",
       long: "你喜欢把力气留到真正决定结果的地方。别人可以热闹很久，但最后那个把胜负钉死的人，最好是你。",
       highlight: "最后一秒你把结果钉死，全场都知道这一下不能被替代。",
       turnoff: "胜负线已经到了，却没有人把结果定下来。"
@@ -301,6 +309,7 @@
     title: "RMBTI 人民币人格测试",
     subtitle: "测测你花钱时，最想让世界回给你什么。",
     helper: ["2-3 分钟", "20 题", "主牌 + 副签"],
+    homeCardIds: ["king", "deep", "myth"],
     primaryOrder,
     secondaryOrder,
     primary,
