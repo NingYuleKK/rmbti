@@ -160,12 +160,12 @@
   };
 
   const mirrorTagTone = {
-    公屏欢迎: "你需要被明确看见",
-    默契欢迎: "你在意熟悉感和私密暗号",
-    起势欢迎: "你一来就会带动场子的气",
-    熟门熟路: "你喜欢别人记得上一次的连接",
+    排面欢迎: "你需要被明确看见、被列队欢迎",
+    私密欢迎: "你只在意少数人是否注意到你来了",
+    控场欢迎: "你一来，气氛就该起来",
+    记忆欢迎: "你要求别人记得你的喜好",
     排面截图: "你会收藏排面被点亮的证据",
-    点名截图: "你会记住那个只属于你的点名瞬间",
+    "CP 截图": "你会留下和在意的人同框的瞬间",
     热闹截图: "你喜欢把热闹留成可回看的证据",
     收藏截图: "你对专属编号和印记很敏感",
     控局位: "你天然会找能看清全局的位置",
@@ -183,125 +183,145 @@
   const option = (label, text, scores, tag) => ({ label, text, scores, tag });
 
   const questions = [
-    q(1, "primary_regular", "你送出一份重礼后，最想看到哪种反应？", [
-      option("A", "我在意的人只回给我一句别人接不上来的话", [score("deep", 3), score("loyal", 1)]),
-      option("B", "本来要塌的局，被我一手扳了回来", [score("saver", 3), score("clutch", 1)]),
-      option("C", "接下来场子怎么走，开始按我的意思变化", [score("ctrl", 3), score("king", 1)]),
-      option("D", "全场先静一秒，接着所有人都知道这一笔是谁打的", [score("king", 3), score("myth", 1)])
+    // Q1 [primary_regular]
+    q(1, "primary_regular", "你刷了一波大的，最想看到啥？", [
+      option("A", "我在意的人高兴了就行", [score("deep", 3), score("loyal", 1)]),
+      option("B", "逆转局面，打的就是心跳，偷的就是塔", [score("saver", 3), score("clutch", 1)]),
+      option("C", "让整体场子的氛围燥起来", [score("ctrl", 3), score("king", 1)]),
+      option("D", "必须震惊大家才是我的目标", [score("king", 3), score("myth", 1)])
     ]),
-    q(2, "primary_regular", "同样的预算，你更愿意把钱砸在哪种瞬间？", [
-      option("A", "我在意的人在人群里偏偏点了我的名字", [score("deep", 3), score("king", 1)]),
-      option("B", "倒计时最后几秒，眼看要输的局被我硬生生翻回来", [score("saver", 3), score("clutch", 1)]),
-      option("C", "一个普通房间，被我点成今晚谁都忘不了的名场面", [score("myth", 3), score("king", 1)]),
-      option("D", "只此一份、过了今晚就不会再有的身份印记", [score("rare", 3), score("loyal", 1)])
+    // Q2 [vibe] 气氛题 — 暗扣副签
+    q(2, "secondary_regular", "你喜欢什么风格的座驾？", [
+      option("A", "只有我有的座驾我才喜欢", [score("timing", 2)]),
+      option("B", "豪华拉风的是我的最爱", [score("burst", 2)]),
+      option("C", "最快拿到别人没有的才是我的风格", [score("burst", 1), score("timing", 1)]),
+      option("D", "看我的 CP 喜欢的风格", [score("steady", 2)])
     ]),
-    q(3, "mirror", "如果你进场时系统只能替你做一件小事，你更希望是哪一种？", [
-      option("A", "公屏明确点名欢迎你回来了", [], "公屏欢迎"),
-      option("B", "我在意的人熟门熟路地说一句“你来了”", [], "默契欢迎"),
-      option("C", "场子自然热起来，大家都知道熟人到了", [], "起势欢迎"),
-      option("D", "不用太吵，但有人立刻接上你上次的话题", [], "熟门熟路")
+    // Q3 [mirror]
+    q(3, "mirror", "你进房间的时候，最想要哪种待遇？", [
+      option("A", "公屏列队欢迎我我最喜欢", [], "排面欢迎"),
+      option("B", "只要我在意的人看到我就行", [], "私密欢迎"),
+      option("C", "我在，气氛就必须起来", [], "控场欢迎"),
+      option("D", "不记得我的喜好是他们不懂事", [], "记忆欢迎")
     ]),
-    q(4, "primary_regular", "你更希望自己在一个场子里，以哪种方式被记住？", [
-      option("A", "TA 不一定会当众表现，但会优先记得我来了", [score("loyal", 3), score("deep", 1)]),
-      option("B", "大家都知道，很多事得看我想不想让它发生", [score("ctrl", 3), score("king", 1)]),
-      option("C", "我一进场，不用多说，气氛和目光自然往我这边聚", [score("king", 3), score("myth", 1)]),
-      option("D", "真到场面快不行的时候，大家知道谁能把它救回来", [score("saver", 3), score("clutch", 1)])
+    // Q4 [secondary_regular]
+    q(4, "secondary_regular", "你花钱的节奏是哪种？", [
+      option("A", "平时无所谓，关键时刻一把梭哈", [score("burst", 3), score("timing", 1)]),
+      option("B", "天天来，把位置坐实", [score("steady", 3), score("heroic", 1)]),
+      option("C", "气氛就是我顺手托起来的事儿，主打随缘", [score("heroic", 3), score("steady", 1)]),
+      option("D", "观察局势，不见兔子不撒鹰", [score("timing", 3), score("burst", 1)])
     ]),
-    q(5, "secondary_regular", "如果你一周都待在同一个场子里，你的出手节奏更像哪一种？", [
-      option("A", "平时不一定常动，真到关键时刻我会狠狠干一把", [score("burst", 3), score("timing", 1)]),
-      option("B", "我会常来常在，今天一点、明天一点，慢慢把位置坐实", [score("steady", 3), score("heroic", 1)]),
-      option("C", "我喜欢顺手把气氛托起来，让场子一直有人味儿", [score("heroic", 3), score("steady", 1)]),
-      option("D", "我会先看局势和节点，等最值得的那一下再出手", [score("timing", 3), score("burst", 1)])
+    // Q5 [vibe] 气氛题 — 暗扣副签
+    q(5, "secondary_regular", "你讨厌什么样的主播行为？", [
+      option("A", "懒洋洋、上工不勤奋", [score("steady", 2)]),
+      option("B", "没情商、说话不把门", [score("heroic", 2)]),
+      option("C", "咋咋呼呼，毫无特色", [score("timing", 2)]),
+      option("D", "我很宽容", [score("burst", 2)])
     ]),
-    q(6, "primary_discriminator", "下面哪种“值钱”，更让你愿意加码？", [
-      option("A", "TA 当下只看见我，其他人都退成背景", [score("deep", 5), score("loyal", 1)]),
-      option("B", "过一阵子再回来，这个场子里还留着我的名字和痕迹", [score("loyal", 5), score("deep", 1)]),
-      option("C", "今晚被点成了一个以后还会被反复提起的名场面", [score("myth", 5), score("king", 1)]),
-      option("D", "我一出现，所有人的目光先落到我身上", [score("king", 5), score("myth", 1)])
+    // Q6 [primary_discriminator] ⚡关键题
+    q(6, "primary_discriminator", "哪种感觉让你忍不住再加一笔？", [
+      option("A", "TA 眼里只有我，冲冠一充为红颜/蓝颜", [score("deep", 5), score("loyal", 1)]),
+      option("B", "变成传奇，全服都流传我的大名", [score("myth", 5), score("rare", 1)]),
+      option("C", "今天这一幕成为一个传奇故事", [score("loyal", 5), score("myth", 1)]),
+      option("D", "我走哪儿，人气就在哪儿", [score("king", 5), score("ctrl", 1)])
     ]),
-    q(7, "primary_regular", "如果今晚只能留下一种记忆，你更想留下哪一种？", [
-      option("A", "TA 以后想起今晚，会知道我和别人不一样", [score("deep", 3), score("loyal", 1)]),
-      option("B", "那个本来平平无奇的夜晚，后来成了大家嘴里的名场面", [score("myth", 3), score("king", 1)]),
-      option("C", "这局是在最后时刻，被我一脚定下来的", [score("clutch", 3), score("saver", 1)]),
-      option("D", "过了一阵子再回来，这里还有我的名字和痕迹", [score("loyal", 3), score("rare", 1)])
+    // Q7 [primary_regular]
+    q(7, "primary_regular", "今晚只能留一个记忆，你选哪个？", [
+      option("A", "我的目标就是 TA 知道我不一样", [score("deep", 3), score("loyal", 1)]),
+      option("B", "哥/姐就是奔着制造名场面去的", [score("myth", 3), score("king", 1)]),
+      option("C", "钉死最后的局面，翻手覆雨", [score("clutch", 3), score("saver", 1)]),
+      option("D", "哥/姐的名字就是传奇", [score("rare", 3), score("myth", 1)])
     ]),
-    q(8, "mirror", "如果今晚只能截一张图，你更想留哪一张？", [
-      option("A", "榜上高亮或飘屏那一秒", [], "排面截图"),
-      option("B", "我在意的人单独点到我名字那一秒", [], "点名截图"),
-      option("C", "全场最热闹、所有人都在场的名场面", [], "热闹截图"),
-      option("D", "只属于我的编号、徽章或印记", [], "收藏截图")
+    // Q8 [vibe] 气氛题 — 暗扣副签
+    q(8, "secondary_regular", "你喜欢什么风格的房间？", [
+      option("A", "安静的、文艺的、可以好好待会儿的", [score("steady", 2)]),
+      option("B", "热闹的、大家能聊得很开心、玩得好", [score("heroic", 2)]),
+      option("C", "沙雕的、和深井冰在一起最开心", [score("burst", 2)]),
+      option("D", "声色狗马的、越夜越开心", [score("heroic", 1), score("burst", 1)])
     ]),
-    q(9, "primary_turnoff", "最让你瞬间下头的是哪种情况？", [
-      option("A", "我在意的人对我和对别人没区别，转身还去逢迎别人", [score("deep", 4)]),
-      option("B", "我一进场，连句像样的欢迎都没有，像没人记得我", [score("king", 4)]),
-      option("C", "我断断续续陪了这么久，最后什么名字、痕迹、专属都没留下", [score("loyal", 4)]),
-      option("D", "我以为拿到的是唯一，结果转头就人手一份", [score("rare", 4)])
+    // Q9 [mirror]
+    q(9, "mirror", "今晚只能截一张图，你截哪个？", [
+      option("A", "截图豪华排面或者飘屏", [], "排面截图"),
+      option("B", "和我在意的人凑成一对儿的截图", [], "CP 截图"),
+      option("C", "大家一起 high 的截图", [], "热闹截图"),
+      option("D", "只属于我的编号、印记或者座驾", [], "收藏截图")
     ]),
-    q(10, "secondary_regular", "同样一笔预算，你更愿意怎么花？", [
-      option("A", "先攒着，等真到高光时刻再狠狠干一笔", [score("burst", 3), score("timing", 1)]),
-      option("B", "拆开来花，别断，重要的是让对方一直感受到我在", [score("steady", 3), score("heroic", 1)]),
-      option("C", "优先花在能把场子带热、把大家都带进状态的地方", [score("heroic", 3), score("steady", 1)]),
-      option("D", "只花在最值、最准、最能起作用的节点上", [score("timing", 3), score("burst", 1)])
+    // Q10 [primary_turnoff]
+    q(10, "primary_turnoff", "哪种情况让你直接不想玩了？", [
+      option("A", "我在意的人对我跟对别人一个样", [score("deep", 4)]),
+      option("B", "我进来了，跟没人认识我似的", [score("king", 4)]),
+      option("C", "陪了这么久，啥痕迹都没留下", [score("loyal", 4)]),
+      option("D", "以为是限量，结果人手一个", [score("rare", 4)])
     ]),
-    q(11, "primary_discriminator", "下面哪种“爽”，更像你？", [
+    // Q11 [primary_discriminator] ⚡关键题
+    q(11, "primary_discriminator", "哪种爽感最对你胃口？", [
       option("A", "眼看要塌的局，被我一把救活", [score("saver", 5), score("clutch", 1)]),
       option("B", "最后一秒，我把结果钉死", [score("clutch", 5), score("saver", 1)]),
       option("C", "全程都在我的节奏里走", [score("ctrl", 5), score("king", 1)]),
-      option("D", "我不需要动太多，大家自然先看我", [score("king", 5), score("ctrl", 1)])
+      option("D", "我不需要动，大家自然先看我", [score("king", 5), score("ctrl", 1)])
     ]),
-    q(12, "primary_regular", "如果系统只能给你一种长期回报，你更想要哪一种？", [
-      option("A", "以后回来这里还留着我的名字和痕迹", [score("loyal", 3), score("rare", 1)]),
-      option("B", "一个只属于我、别人拿不到的编号或印记", [score("rare", 3), score("loyal", 1)]),
-      option("C", "我点过的那个场面，后来还会被反复提起", [score("myth", 3), score("king", 1)]),
-      option("D", "我在意的人会默默记得我来过，不必每次都摆在明面上", [score("deep", 3), score("loyal", 1)])
+    // Q12 [vibe] 气氛题 — 暗扣副签
+    q(12, "secondary_regular", "你的昵称是哪种风格的？", [
+      option("A", "抽象的", [score("burst", 2)]),
+      option("B", "豪迈的", [score("heroic", 2)]),
+      option("C", "本色的", [score("steady", 2)]),
+      option("D", "和我喜欢的人组对的", [score("steady", 1), score("timing", 1)])
     ]),
-    q(13, "mirror", "同一个场子里，你更喜欢待在哪种位置？", [
-      option("A", "一眼能看清全场和动线的位置", [], "控局位"),
-      option("B", "靠近我在意的人、能随时接上话的位置", [], "靠近位"),
-      option("C", "人来人往、最容易把气氛带起来的位置", [], "热场位"),
-      option("D", "不太显眼，但能等到最好时机的位置", [], "潜伏位")
+    // Q13 [mirror]
+    q(13, "mirror", "在房间里你一般待哪儿？", [
+      option("A", "能看清全场的位置", [], "控局位"),
+      option("B", "靠着我在意的人", [], "靠近位"),
+      option("C", "最热闹的地方", [], "热场位"),
+      option("D", "不显眼，但能等到最好时机", [], "潜伏位")
     ]),
-    q(14, "secondary_regular", "哪一种出手方式，最像你心里“花得舒服”的状态？", [
-      option("A", "我不怎么出手就算了，一出手就得让人记住", [score("burst", 3), score("timing", 1)]),
-      option("B", "不用每次都大，但我在的时候，TA 慢慢会习惯我的存在", [score("steady", 3), score("heroic", 1)]),
-      option("C", "我一搭手，整个场子都顺起来、热起来", [score("heroic", 3), score("steady", 1)]),
-      option("D", "我最爽的是看准时机，出手刚好，钱一分都没白花", [score("timing", 3), score("burst", 1)])
+    // Q14 [secondary_turnoff]
+    q(14, "secondary_turnoff", "花了钱最让你窝火的是？", [
+      option("A", "憋到关键时刻一把梭了，场子没接住", [score("burst", 4)]),
+      option("B", "天天来，最后跟没来过一样", [score("steady", 4)]),
+      option("C", "想把气氛托起来，大家还是冷冰冰的", [score("heroic", 4)]),
+      option("D", "看准了时机出手，结果白瞎了", [score("timing", 4)])
     ]),
-    q(15, "primary_turnoff", "最让你觉得“这局没意思了”的是哪一种？", [
-      option("A", "明明有机会扳回来，结果系统、人和场子谁都没接住", [score("saver", 4)]),
-      option("B", "最后的线都到了，结果没人把结果定下来", [score("clutch", 4)]),
-      option("C", "我想带节奏，结果所有人都在各玩各的", [score("ctrl", 4)]),
-      option("D", "画面看着挺贵，实际一点故事都没有", [score("myth", 4)])
+    // Q15 [vibe] 气氛题 — 暗扣副签
+    q(15, "secondary_regular", "你对各种活动的态度如何？", [
+      option("A", "视情况而定，有的打有的不打", [score("timing", 2)]),
+      option("B", "奖品符合我的审美才行", [score("burst", 2)]),
+      option("C", "我的 CP 说了算", [score("steady", 2)]),
+      option("D", "随缘，没有一定要参加", [score("heroic", 2)])
     ]),
-    q(16, "primary_regular", "你更愿意让别人怎么谈论你？", [
-      option("A", "TA 对我是真的不一样", [score("deep", 3), score("loyal", 1)]),
-      option("B", "这个人平时不显山露水，但关键时刻真能救场", [score("saver", 3), score("clutch", 1)]),
-      option("C", "那晚就是被我点成名场面的", [score("myth", 3), score("king", 1)]),
-      option("D", "那件东西最后被我拿到了，别人没有", [score("rare", 3), score("loyal", 1)])
-    ]),
-    q(17, "secondary_turnoff", "最让你下头的一种出手体验是？", [
-      option("A", "我都憋到关键时刻狠狠干了，结果场子根本没接住", [score("burst", 4)]),
-      option("B", "我明明常来常在，最后却像谁都不记得我", [score("steady", 4)]),
-      option("C", "我想把气氛托起来，结果大家还是冷冷的、各玩各的", [score("heroic", 4)]),
-      option("D", "我明明看准了点，结果系统、场子或者人浪费了那个节点", [score("timing", 4)])
-    ]),
-    q(18, "mirror", "如果把你的出手比作一样东西，你更认哪一种？", [
-      option("A", "一盏灯，亮起来大家就知道不一样了", [], "灯"),
-      option("B", "一把火，点到了就会一下子窜起来", [], "火"),
-      option("C", "一条河，平时不吵，但一直在流", [], "河"),
+    // Q16 [mirror]
+    q(16, "mirror", "你花钱的风格更像啥？", [
+      option("A", "一盏灯，亮了大家就知道不一样了", [], "灯"),
+      option("B", "一把火，点着了直接窜起来", [], "火"),
+      option("C", "一条河，不吵，但一直在流", [], "河"),
       option("D", "一把刀，平时收着，出鞘就很准", [], "刀")
     ]),
-    q(19, "primary_discriminator", "下面哪种落差更让你不爽？", [
-      option("A", "明明是我出的，结果没人知道", [score("king", 5), score("rare", 1)]),
-      option("B", "明明说好是唯一，结果很快人人都有", [score("rare", 5), score("king", 1)]),
-      option("C", "明明一直都有我，结果最后没留下任何名字", [score("loyal", 5), score("deep", 1)]),
-      option("D", "明明 TA 应该记得我，结果还是把我当其中之一", [score("deep", 5), score("loyal", 1)])
+    // Q17 [vibe] 气氛题 — 暗扣副签
+    q(17, "secondary_regular", "你对语音直播的态度是？", [
+      option("A", "小娱乐，生活中的小点缀而已", [score("timing", 2)]),
+      option("B", "我就是陪我喜欢的人和朋友", [score("steady", 2)]),
+      option("C", "墨镜一戴，座驾一骑，我的舞台", [score("burst", 2)]),
+      option("D", "有时候玩，有时候不玩", [score("heroic", 2)])
     ]),
-    q(20, "primary_regular", "如果今晚只能给自己带走一枚勋章，你更想是哪一枚？", [
+    // Q18 [primary_discriminator] ⚡关键题
+    q(18, "primary_discriminator", "哪种落差最让你不爽？", [
+      option("A", "明明是我刷的，结果没人知道", [score("king", 5), score("rare", 1)]),
+      option("B", "说好的唯一，结果人人都有", [score("rare", 5), score("king", 1)]),
+      option("C", "一直都有我，最后连个名字都没留", [score("loyal", 5), score("deep", 1)]),
+      option("D", "TA 明明该记得我，结果把我当路人", [score("deep", 5), score("loyal", 1)])
+    ]),
+    // Q19 [primary_regular]
+    q(19, "primary_regular", "今晚只能带走一个称号，你选哪个？", [
       option("A", "常来常在，留下痕迹", [score("loyal", 3), score("rare", 1)]),
       option("B", "只此一份，没人复制", [score("rare", 3), score("king", 1)]),
       option("C", "名场面制造者", [score("myth", 3), score("king", 1)]),
-      option("D", "最后一击定音者", [score("clutch", 3), score("saver", 1)])
+      option("D", "最后一击，一锤定音", [score("clutch", 3), score("saver", 1)])
+    ]),
+    // Q20 [primary_regular] 收尾题 — Litch 改写版
+    q(20, "primary_regular", "你最享受的感受是？", [
+      option("A", "豪情一掷本身就是我的爱，玩的就是心跳", [score("king", 3), score("myth", 1)]),
+      option("B", "没战斗就不好玩", [score("saver", 3), score("clutch", 1)]),
+      option("C", "呼朋唤友", [score("ctrl", 3), score("king", 1)]),
+      option("D", "享受深情的陪伴", [score("deep", 3), score("loyal", 1)])
     ])
   ];
 
@@ -318,9 +338,9 @@
     mirrorTagTone,
     questions,
     tiebreakers: {
-      primaryDiscriminatorQuestionIds: [6, 11, 19],
-      primaryTurnoffQuestionIds: [9, 15],
-      secondaryTurnoffQuestionIds: [17]
+      primaryDiscriminatorQuestionIds: [6, 11, 18],
+      primaryTurnoffQuestionIds: [10],
+      secondaryTurnoffQuestionIds: [14]
     }
   };
 
