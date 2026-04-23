@@ -24,6 +24,8 @@
     state.currentQuestionIndex = 0;
     state.answers = Array(config.questions.length).fill(null);
     state.result = null;
+    state.isTransitioning = false;
+    state.isSharing = false;
     setView("home");
   };
 
@@ -31,6 +33,8 @@
     state.currentQuestionIndex = 0;
     state.answers = Array(config.questions.length).fill(null);
     state.result = null;
+    state.isTransitioning = false;
+    state.isSharing = false;
     setView("question");
   };
 
@@ -96,18 +100,18 @@
     const question = config.questions[state.currentQuestionIndex];
     const progress = ((state.currentQuestionIndex + 1) / config.questions.length) * 100;
     const selectedAnswer = state.answers[state.currentQuestionIndex];
+    const isFirstQuestion = state.currentQuestionIndex === 0;
 
     app.innerHTML = `
       <section class="screen question-screen">
         <header class="question-header">
-          <button class="ghost-button" type="button" data-action="back">返回</button>
+          ${isFirstQuestion ? '<span></span>' : '<button class="ghost-button" type="button" data-action="back">上一题</button>'}
           <div class="question-count">${pad(state.currentQuestionIndex + 1)}/${pad(config.questions.length)}</div>
         </header>
         <div class="progress-track" aria-label="答题进度">
           <div class="progress-fill" style="width: ${progress}%"></div>
         </div>
         <article class="question-panel">
-          <p class="eyebrow">${question.type === "mirror" ? "镜面题" : question.type.includes("secondary") ? "副签题" : "主牌题"}</p>
           <h2>${question.prompt}</h2>
           <div class="options">
             ${question.options
@@ -160,7 +164,7 @@
   const shareCardMarkup = (result, primary) => `
     <section id="share-card" class="share-card" style="--card-color: ${primary.color}; --card-accent: ${primary.accent};">
       <div class="share-card-inner">
-        <p class="share-brand">RMBTI 人民币人格测试</p>
+        <p class="share-brand">直播老板 RMBTI 人格测试</p>
         <img class="share-card-image" src="${primary.imageSrc}" alt="${primary.name} ${primary.code} 卡牌" />
         <div class="share-copy">
           <h2>${result.combinationName}</h2>

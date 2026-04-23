@@ -10,6 +10,9 @@ const html2canvasUrl = indexHtml.match(/src="([^"]*html2canvas[^"]*)"/)?.[1];
 assert.equal(html2canvasUrl, "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
 assert.ok(!/\s/.test(html2canvasUrl), "html2canvas CDN URL must not contain whitespace");
 
+// Question count
+assert.equal(config.questions.length, 19, "Should have exactly 19 questions");
+
 // All-A scenario
 const allA = Array(config.questions.length).fill(0);
 const allAResult = engine.scoreAnswers(config, allA);
@@ -19,12 +22,12 @@ assert.equal(allAResult.secondaryId, "burst");
 assert.equal(allAResult.mirrorDetails.length, 4);
 assert.equal(allAResult.mirrorDetails[0].tone, "你需要被明确看见、被列队欢迎");
 assert.deepEqual(allAResult.primaryScores, {
-  deep: 15,
-  saver: 5,
+  deep: 13,
+  saver: 6,
   ctrl: 0,
-  loyal: 6,
-  myth: 1,
-  rare: 2,
+  loyal: 3,
+  myth: 0,
+  rare: 1,
   king: 8,
   clutch: 1
 });
@@ -62,7 +65,7 @@ const primaryTieConfig = {
       options: [{ label: "A", text: "tie", scores: [{ target: "deep", points: 5 }, { target: "saver", points: 5 }] }]
     },
     {
-      id: 6,
+      id: 11,
       type: "primary_discriminator",
       prompt: "deep discriminator",
       options: [{ label: "A", text: "deep", scores: [{ target: "deep", points: 5 }] }]
@@ -117,9 +120,6 @@ assert.ok(
     secondaryTieResult.secondaryTurnoffScores.burst
 );
 
-// Question count
-assert.equal(config.questions.length, 20, "Should have exactly 20 questions");
-
 // All 8 primary personalities should be reachable (have scoring questions)
 const scoredPrimaries = new Set();
 config.questions.forEach((q) => {
@@ -145,5 +145,22 @@ config.questions.forEach((q) => {
   }
 });
 assert.equal(scoredSecondaries.size, 4, "All 4 secondary personalities should have scoring paths");
+
+// Tiebreaker config references valid question IDs
+config.tiebreakers.primaryDiscriminatorQuestionIds.forEach((qid) => {
+  const found = config.questions.find((q) => q.id === qid);
+  assert.ok(found, `Discriminator question ID ${qid} should exist`);
+  assert.equal(found.type, "primary_discriminator", `Question ${qid} should be primary_discriminator`);
+});
+config.tiebreakers.primaryTurnoffQuestionIds.forEach((qid) => {
+  const found = config.questions.find((q) => q.id === qid);
+  assert.ok(found, `Turnoff question ID ${qid} should exist`);
+  assert.equal(found.type, "primary_turnoff", `Question ${qid} should be primary_turnoff`);
+});
+config.tiebreakers.secondaryTurnoffQuestionIds.forEach((qid) => {
+  const found = config.questions.find((q) => q.id === qid);
+  assert.ok(found, `Secondary turnoff question ID ${qid} should exist`);
+  assert.equal(found.type, "secondary_turnoff", `Question ${qid} should be secondary_turnoff`);
+});
 
 console.log("RMBTI scoring tests passed. (" + config.questions.length + " questions verified)");
