@@ -201,7 +201,7 @@
               <dl>
                 <div><dt>核心欲望</dt><dd>${primary.desire}</dd></div>
                 <div><dt>高光时刻</dt><dd>${primary.highlight}</dd></div>
-                <div><dt>下头瞬间</dt><dd>${primary.turnoff}</dd></div>
+                <div><dt>逆鳞</dt><dd>${primary.turnoff}</dd></div>
               </dl>
             </section>
             <section class="reading-block secondary-block">
@@ -209,7 +209,7 @@
               <p>${secondary.sentence}</p>
               <dl>
                 <div><dt>短解读</dt><dd>${secondary.short}</dd></div>
-                <div><dt>下头点</dt><dd>${secondary.turnoff}</dd></div>
+                <div><dt>逆鳞</dt><dd>${secondary.turnoff}</dd></div>
               </dl>
             </section>
             <section class="mirror-block">

@@ -11,14 +11,14 @@ assert.equal(html2canvasUrl, "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dis
 assert.ok(!/\s/.test(html2canvasUrl), "html2canvas CDN URL must not contain whitespace");
 
 // Question count
-assert.equal(config.questions.length, 19, "Should have exactly 19 questions");
+assert.equal(config.questions.length, 18, "Should have exactly 18 questions");
 
 // All-A scenario
 const allA = Array(config.questions.length).fill(0);
 const allAResult = engine.scoreAnswers(config, allA);
 
 assert.equal(allAResult.primaryId, "deep");
-assert.equal(allAResult.secondaryId, "burst");
+assert.equal(allAResult.secondaryId, "timing");
 assert.equal(allAResult.mirrorDetails.length, 4);
 assert.equal(allAResult.mirrorDetails[0].tone, "你需要被明确看见、被列队欢迎");
 assert.deepEqual(allAResult.primaryScores, {
@@ -27,14 +27,14 @@ assert.deepEqual(allAResult.primaryScores, {
   ctrl: 0,
   loyal: 3,
   myth: 0,
-  rare: 1,
-  king: 8,
+  rare: 0,
+  king: 3,
   clutch: 1
 });
 assert.deepEqual(allAResult.secondaryScores, {
-  burst: 9,
+  burst: 5,
   steady: 4,
-  heroic: 0,
+  heroic: 2,
   timing: 7
 });
 assert.deepEqual(allAResult.mirrorTags, ["排面欢迎", "排面截图", "专属位", "灯"]);
@@ -65,13 +65,13 @@ const primaryTieConfig = {
       options: [{ label: "A", text: "tie", scores: [{ target: "deep", points: 5 }, { target: "saver", points: 5 }] }]
     },
     {
-      id: 11,
+      id: 12,
       type: "primary_discriminator",
       prompt: "deep discriminator",
       options: [{ label: "A", text: "deep", scores: [{ target: "deep", points: 5 }] }]
     },
     {
-      id: 10,
+      id: 11,
       type: "primary_turnoff",
       prompt: "saver turnoff",
       options: [{ label: "A", text: "saver", scores: [{ target: "saver", points: 5 }] }]
@@ -87,7 +87,7 @@ assert.ok(
     primaryTieResult.primaryDiscriminatorScores.saver
 );
 
-// Secondary tiebreaker: turnoff wins
+// Secondary tiebreaker: with no secondary_turnoff questions, test that order-based fallback works
 const secondaryTieConfig = {
   ...config,
   questions: [
@@ -96,29 +96,14 @@ const secondaryTieConfig = {
       type: "secondary_regular",
       prompt: "secondary tie base",
       options: [{ label: "A", text: "tie", scores: [{ target: "burst", points: 5 }, { target: "steady", points: 5 }] }]
-    },
-    {
-      id: 10,
-      type: "secondary_regular",
-      prompt: "burst equalizer",
-      options: [{ label: "A", text: "burst", scores: [{ target: "burst", points: 4 }] }]
-    },
-    {
-      id: 14,
-      type: "secondary_turnoff",
-      prompt: "steady turnoff",
-      options: [{ label: "A", text: "steady", scores: [{ target: "steady", points: 4 }] }]
     }
   ]
 };
-const secondaryTieResult = engine.scoreAnswers(secondaryTieConfig, [0, 0, 0]);
+const secondaryTieResult = engine.scoreAnswers(secondaryTieConfig, [0]);
 
 assert.equal(secondaryTieResult.secondaryScores.burst, secondaryTieResult.secondaryScores.steady);
-assert.equal(secondaryTieResult.secondaryId, "steady");
-assert.ok(
-  secondaryTieResult.secondaryTurnoffScores.steady >
-    secondaryTieResult.secondaryTurnoffScores.burst
-);
+// With equal scores and no turnoff tiebreaker, first in secondaryOrder wins (burst before steady)
+assert.equal(secondaryTieResult.secondaryId, "burst");
 
 // All 8 primary personalities should be reachable (have scoring questions)
 const scoredPrimaries = new Set();
