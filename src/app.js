@@ -3,6 +3,9 @@
   const engine = window.RMBTI_ENGINE;
   const app = document.querySelector("#app");
 
+  const PICOPICO_LOGO = "../assets/picopico_logo.png";
+  const QR_URL = "https://rmbti-test-9bcmtdkn.manus.space/src/index.html";
+
   const state = {
     view: "home",
     currentQuestionIndex: 0,
@@ -14,6 +17,9 @@
 
   const pad = (value) => String(value).padStart(2, "0");
   const answeredCount = () => state.answers.filter((answer) => answer !== null).length;
+
+  const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isMobile = () => /Android|iPhone|iPad|iPod|webOS|BlackBerry/i.test(navigator.userAgent);
 
   const setView = (view) => {
     state.view = view;
@@ -161,22 +167,46 @@
     <p>${result.mirrorSentence}</p>
   `;
 
-  const shareCardMarkup = (result, primary) => `
-    <section id="share-card" class="share-card" style="--card-color: ${primary.color}; --card-accent: ${primary.accent};">
+  // Helper: convert hex to rgba for html2canvas compatibility (no color-mix support)
+  const hexToRgba = (hex, alpha) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  const shareCardMarkup = (result, primary, secondary) => {
+    const glowColor = hexToRgba(primary.accent, 0.28);
+    const borderColor = hexToRgba(primary.accent, 0.7);
+    return `
+    <section id="share-card" class="share-card" style="--card-color: ${primary.color}; --card-accent: ${primary.accent}; --share-accent-glow: ${glowColor}; --share-border-color: ${borderColor};">
       <div class="share-card-inner">
         <p class="share-brand">直播老板 RMBTI 人格测试</p>
-        <img class="share-card-image" src="${primary.imageSrc}" alt="${primary.name} ${primary.code} 卡牌" />
-        <div class="share-copy">
-          <h2>${result.combinationName}</h2>
-          <p>${primary.sentence}</p>
+        <img class="share-card-image" src="${primary.imageSrc}" alt="${primary.name} ${primary.code} 卡牌" crossorigin="anonymous" />
+        <div class="share-persona">
+          <span class="share-persona-label">你的老板人格是</span>
+          <span class="share-persona-name">${result.combinationName}</span>
         </div>
-        <div class="qr-placeholder">
-          <span></span>
-          <strong>扫码测你的老板人格</strong>
+        <p class="share-sentence">${result.combinationSentence}</p>
+        <div class="share-turnoff">
+          <span class="share-turnoff-label">逆鳞</span>
+          <span class="share-turnoff-text">${primary.turnoff}</span>
+        </div>
+        <div class="share-mirror-pills">
+          ${result.mirrorDetails.map((item) => `<span>${item.tag}</span>`).join("")}
+        </div>
+        <div class="share-ad">
+          <img class="share-ad-logo" src="${PICOPICO_LOGO}" alt="PicoPico" crossorigin="anonymous" />
+          <span class="share-ad-text">下载 PicoPico，即可激活你的【${primary.name}】版老板座驾</span>
+        </div>
+        <div class="share-qr-section">
+          <div class="share-qr-box" id="share-qr-container"></div>
+          <p class="share-qr-hint">扫码测测你是哪种老板</p>
         </div>
       </div>
     </section>
   `;
+  };
 
   const renderResult = () => {
     const result = state.result || engine.scoreAnswers(config, state.answers);
@@ -227,14 +257,31 @@
               </div>
             </div>
             <div class="result-actions">
-              <button class="primary-button" type="button" data-action="share" ${state.isSharing ? "disabled" : ""}>${state.isSharing ? "生成中…" : "分享"}</button>
+              <button class="primary-button" type="button" data-action="share" ${state.isSharing ? "disabled" : ""}>${state.isSharing ? "正在生成分享卡片..." : "分享"}</button>
               <button class="ghost-button" type="button" data-action="reset">再测一次</button>
             </div>
           </div>
-          ${shareCardMarkup(result, primary)}
+          ${shareCardMarkup(result, primary, secondary)}
         </article>
       </section>
     `;
+
+    // Generate real QR code in the share card
+    generateQRCode();
+  };
+
+  const generateQRCode = () => {
+    const container = document.getElementById("share-qr-container");
+    if (!container || !window.QRCode) return;
+    container.innerHTML = "";
+    new window.QRCode(container, {
+      text: QR_URL,
+      width: 124,
+      height: 124,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: window.QRCode.CorrectLevel.M
+    });
   };
 
   const waitForShareImages = async (shareCard) => {
@@ -242,12 +289,26 @@
     await Promise.all(
       images.map((image) => {
         if (image.complete) return Promise.resolve();
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           image.addEventListener("load", resolve, { once: true });
-          image.addEventListener("error", reject, { once: true });
+          image.addEventListener("error", () => resolve(), { once: true });
         });
       })
     );
+  };
+
+  const showFullscreenPreview = (dataUrl) => {
+    const overlay = document.createElement("div");
+    overlay.className = "share-overlay";
+    overlay.innerHTML = `
+      <button class="share-overlay-close" type="button">&times;</button>
+      <img src="${dataUrl}" alt="分享卡片" />
+      <p class="share-overlay-hint">长按图片保存到相册</p>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector(".share-overlay-close").addEventListener("click", () => {
+      overlay.remove();
+    });
   };
 
   const downloadShareCard = async () => {
@@ -262,21 +323,38 @@
     render();
 
     try {
+      // Re-generate QR code after re-render
+      generateQRCode();
+
+      // Wait for QR code canvas to render
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       const activeShareCard = document.querySelector("#share-card");
       await waitForShareImages(activeShareCard);
+
       const canvas = await window.html2canvas(activeShareCard, {
         backgroundColor: null,
-        scale: 1,
+        scale: 2,
         useCORS: true,
+        allowTaint: false,
         width: 750,
-        height: 1334
+        height: 1500
       });
-      const link = document.createElement("a");
-      link.download = `rmbti-${state.result.primaryId}-${state.result.secondaryId}.png`;
-      link.href = canvas.toDataURL("image/png");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+
+      const dataUrl = canvas.toDataURL("image/png");
+
+      if (isMobile()) {
+        // Mobile: show fullscreen preview for long-press save
+        showFullscreenPreview(dataUrl);
+      } else {
+        // Desktop: auto download
+        const link = document.createElement("a");
+        link.download = `rmbti-${state.result.primaryId}-${state.result.secondaryId}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
     } catch (error) {
       window.alert("分享卡生成失败，请刷新后重试。");
       console.error(error);
