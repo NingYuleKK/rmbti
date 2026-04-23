@@ -284,15 +284,44 @@
     });
   };
 
-  const waitForShareImages = async (shareCard) => {
+  // Convert an image URL to base64 data URL via canvas to avoid CORS issues with html2canvas
+  const imgToBase64 = (src) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const cvs = document.createElement("canvas");
+          cvs.width = img.naturalWidth;
+          cvs.height = img.naturalHeight;
+          cvs.getContext("2d").drawImage(img, 0, 0);
+          resolve(cvs.toDataURL("image/png"));
+        } catch (e) {
+          resolve(src); // fallback to original
+        }
+      };
+      img.onerror = () => resolve(src); // fallback to original
+      img.src = src;
+    });
+  };
+
+  // Convert all images in the share card to inline base64 data URLs
+  const inlineShareImages = async (shareCard) => {
     const images = [...shareCard.querySelectorAll("img")];
     await Promise.all(
-      images.map((image) => {
-        if (image.complete) return Promise.resolve();
-        return new Promise((resolve) => {
-          image.addEventListener("load", resolve, { once: true });
-          image.addEventListener("error", () => resolve(), { once: true });
-        });
+      images.map(async (image) => {
+        // Wait for image to load first
+        if (!image.complete) {
+          await new Promise((resolve) => {
+            image.addEventListener("load", resolve, { once: true });
+            image.addEventListener("error", () => resolve(), { once: true });
+          });
+        }
+        // Convert to base64 data URL
+        if (image.src && !image.src.startsWith("data:")) {
+          const base64 = await imgToBase64(image.src);
+          image.src = base64;
+        }
       })
     );
   };
@@ -330,15 +359,17 @@
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       const activeShareCard = document.querySelector("#share-card");
-      await waitForShareImages(activeShareCard);
+      // Convert all images to inline base64 to avoid CORS/taint issues on iOS Safari & WeChat
+      await inlineShareImages(activeShareCard);
 
       const canvas = await window.html2canvas(activeShareCard, {
         backgroundColor: null,
         scale: 2,
-        useCORS: true,
-        allowTaint: false,
+        useCORS: false,
+        allowTaint: true,
         width: 750,
-        height: 1500
+        height: 1500,
+        logging: false
       });
 
       const dataUrl = canvas.toDataURL("image/png");
@@ -356,8 +387,8 @@
         link.remove();
       }
     } catch (error) {
-      window.alert("分享卡生成失败，请刷新后重试。");
-      console.error(error);
+      console.error("[RMBTI] Share card generation failed:", error?.message || error, error?.stack || "");
+      window.alert("分享卡生成失败：" + (error?.message || "未知错误") + "\n请刷新后重试。");
     } finally {
       state.isSharing = false;
       render();
