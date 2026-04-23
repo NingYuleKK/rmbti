@@ -37,7 +37,7 @@ assert.deepEqual(allAResult.secondaryScores, {
   heroic: 0,
   timing: 7
 });
-assert.deepEqual(allAResult.mirrorTags, ["排面欢迎", "排面截图", "控局位", "灯"]);
+assert.deepEqual(allAResult.mirrorTags, ["排面欢迎", "排面截图", "专属位", "灯"]);
 
 // Card images exist
 config.primaryOrder.forEach((id) => {
