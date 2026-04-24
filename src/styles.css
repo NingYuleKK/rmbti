@@ -616,6 +616,25 @@ h1 {
   color: var(--muted);
 }
 
+.intro-skip {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(214, 177, 93, 0.22);
+  border-radius: 999px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.intro-skip:hover,
+.intro-skip:focus-visible {
+  border-color: var(--gold-soft);
+  color: var(--gold-soft);
+}
+
 .coin-spark {
   position: absolute;
   width: 9px;

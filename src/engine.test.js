@@ -25,6 +25,9 @@ assert.match(appSource, /playSound/);
 assert.match(appSource, /sound-toggle/);
 assert.match(appSource, /progress-node/);
 assert.match(appSource, /洗牌中/);
+assert.match(appSource, /skipIntro/);
+assert.match(appSource, /data-action="skip-intro"/);
+assert.match(appSource, /跳过/);
 
 // Question count
 assert.equal(config.questions.length, 18, "Should have exactly 18 questions");
@@ -71,10 +74,12 @@ assert.deepEqual(allAResult.secondaryScores, {
 assert.deepEqual(allAResult.mirrorTags, ["排面欢迎", "排面截图", "专属位", "灯"]);
 
 const maxScores = engine.getMaxScores(config);
-assert.equal(maxScores.primary, 21);
-assert.equal(maxScores.secondary, 17);
-assert.equal(engine.toScorePercent(allAResult.primaryScores.deep, maxScores.primary), 62);
-assert.equal(engine.toScorePercent(allAResult.secondaryScores.timing, maxScores.secondary), 41);
+assert.equal(maxScores.primary.deep, 16);
+assert.equal(maxScores.primary.king, 19);
+assert.equal(maxScores.secondary.timing, 14);
+assert.equal(maxScores.secondary.burst, 17);
+assert.equal(engine.toScorePercent(allAResult.primaryScores.deep, maxScores.primary.deep), 81);
+assert.equal(engine.toScorePercent(allAResult.secondaryScores.timing, maxScores.secondary.timing), 50);
 
 // Card images exist
 config.primaryOrder.forEach((id) => {

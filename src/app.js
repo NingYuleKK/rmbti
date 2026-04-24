@@ -5,7 +5,7 @@
 
   const PICOPICO_LOGO = "../assets/picopico_logo.png";
   const QR_URL = "https://rmbti-test-9bcmtdkn.manus.space/src/index.html";
-  const SCORE_MAX = engine.getMaxScores(config);
+  const DIMENSION_MAX = engine.getMaxScores(config);
   const SOUND_STORAGE_KEY = "rmbti_sound_enabled";
 
   /* 主牌中文名映射（用于 PicoPico 广告文案） */
@@ -94,6 +94,7 @@
 
   const reset = () => {
     if (introTimer) window.clearTimeout(introTimer);
+    introTimer = null;
     state.currentQuestionIndex = 0;
     state.answers = Array(config.questions.length).fill(null);
     state.result = null;
@@ -118,6 +119,14 @@
       playSound("flip");
       setView("question");
     }, 3400);
+  };
+
+  const skipIntro = () => {
+    if (state.view !== "intro") return;
+    if (introTimer) window.clearTimeout(introTimer);
+    introTimer = null;
+    playSound("flip");
+    setView("question");
   };
 
   const choose = (optionIndex, optionButton) => {
@@ -204,6 +213,7 @@
           <h2>${state.introMessage}</h2>
           <p>请坐稳，第一张老板牌马上翻开。</p>
         </div>
+        <button class="intro-skip" type="button" data-action="skip-intro">跳过</button>
       </section>
     `;
   };
@@ -297,8 +307,14 @@
   const scoreVisibilityMarkup = (result) => {
     const primary = config.primary[result.primaryId];
     const secondary = config.secondary[result.secondaryId];
-    const primaryPercent = engine.toScorePercent(result.primaryScores[result.primaryId], SCORE_MAX.primary);
-    const secondaryPercent = engine.toScorePercent(result.secondaryScores[result.secondaryId], SCORE_MAX.secondary);
+    const primaryPercent = engine.toScorePercent(
+      result.primaryScores[result.primaryId],
+      DIMENSION_MAX.primary[result.primaryId]
+    );
+    const secondaryPercent = engine.toScorePercent(
+      result.secondaryScores[result.secondaryId],
+      DIMENSION_MAX.secondary[result.secondaryId]
+    );
 
     if (isDebugMode()) {
       return `
@@ -812,6 +828,8 @@
     if (actionTarget?.dataset.action === "reset") reset();
     if (actionTarget?.dataset.action === "share") downloadShareCard();
     if (actionTarget?.dataset.action === "toggle-sound") toggleSound();
+    if (actionTarget?.dataset.action === "skip-intro") skipIntro();
+    if (!actionTarget && state.view === "intro" && event.target.closest(".intro-screen")) skipIntro();
     if (optionTarget) choose(Number(optionTarget.dataset.option), optionTarget);
   });
 

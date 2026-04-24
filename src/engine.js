@@ -157,23 +157,30 @@
     };
   };
 
-  const getCategoryMaxScore = (questions, typePrefix) =>
+  const getDimensionMaxScores = (questions, ids, typePrefix) => {
+    const maxScores = zeroScores(ids);
+
     questions
       .filter((question) => question.type.startsWith(typePrefix))
-      .reduce((sum, question) => {
-        const maxForQuestion = question.options.reduce((maxPoints, option) => {
-          const optionPoints = option.scores.reduce(
-            (entryMax, entry) => Math.max(entryMax, entry.points),
-            0
-          );
-          return Math.max(maxPoints, optionPoints);
-        }, 0);
-        return sum + maxForQuestion;
-      }, 0);
+      .forEach((question) => {
+        const questionMaxScores = {};
+        question.options.forEach((option) => {
+          option.scores.forEach(({ target, points }) => {
+            if (!ids.includes(target)) return;
+            questionMaxScores[target] = Math.max(questionMaxScores[target] || 0, points);
+          });
+        });
+        Object.entries(questionMaxScores).forEach(([target, points]) => {
+          maxScores[target] += points;
+        });
+      });
+
+    return maxScores;
+  };
 
   const getMaxScores = (config) => ({
-    primary: getCategoryMaxScore(config.questions, "primary"),
-    secondary: getCategoryMaxScore(config.questions, "secondary")
+    primary: getDimensionMaxScores(config.questions, config.primaryOrder, "primary"),
+    secondary: getDimensionMaxScores(config.questions, config.secondaryOrder, "secondary")
   });
 
   const toScorePercent = (score, maxScore) => {
