@@ -63,9 +63,15 @@
   const buildCombinationSentence = (config, primaryId, secondaryId) => {
     const primary = config.primary[primaryId];
     const template = config.combinationTemplates[secondaryId];
-    return template
+    const sentenceTemplate = typeof template === "string" ? template : template.sentence;
+    return sentenceTemplate
       .replaceAll("{primaryName}", primary.name)
       .replaceAll("{desire}", primary.desire);
+  };
+
+  const buildHiddenTitle = (config, primaryId, secondaryId) => {
+    const template = config.combinationTemplates[secondaryId];
+    return template?.hiddenTitles?.[primaryId] || "";
   };
 
   const buildMirrorSentence = (config, tags) => {
@@ -146,11 +152,43 @@
       mirrorDetails: buildMirrorDetails(config, mirrorTags),
       combinationName: `${config.primary[primaryId].name}·${config.secondary[secondaryId].name}`,
       combinationSentence: buildCombinationSentence(config, primaryId, secondaryId),
+      hiddenTitle: buildHiddenTitle(config, primaryId, secondaryId),
       mirrorSentence: buildMirrorSentence(config, mirrorTags)
     };
   };
 
-  const engine = { scoreAnswers, buildCombinationSentence, buildMirrorSentence };
+  const getCategoryMaxScore = (questions, typePrefix) =>
+    questions
+      .filter((question) => question.type.startsWith(typePrefix))
+      .reduce((sum, question) => {
+        const maxForQuestion = question.options.reduce((maxPoints, option) => {
+          const optionPoints = option.scores.reduce(
+            (entryMax, entry) => Math.max(entryMax, entry.points),
+            0
+          );
+          return Math.max(maxPoints, optionPoints);
+        }, 0);
+        return sum + maxForQuestion;
+      }, 0);
+
+  const getMaxScores = (config) => ({
+    primary: getCategoryMaxScore(config.questions, "primary"),
+    secondary: getCategoryMaxScore(config.questions, "secondary")
+  });
+
+  const toScorePercent = (score, maxScore) => {
+    if (!maxScore) return 0;
+    return Math.round((score / maxScore) * 100);
+  };
+
+  const engine = {
+    scoreAnswers,
+    buildCombinationSentence,
+    buildHiddenTitle,
+    buildMirrorSentence,
+    getMaxScores,
+    toScorePercent
+  };
   root.RMBTI_ENGINE = engine;
 
   if (typeof module !== "undefined" && module.exports) {

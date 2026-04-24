@@ -7,11 +7,41 @@ const engine = require("./engine");
 const indexHtml = fs.readFileSync(path.resolve(__dirname, "index.html"), "utf8");
 const html2canvasUrl = indexHtml.match(/src="([^"]*html2canvas[^"]*)"/)?.[1];
 
-assert.equal(html2canvasUrl, "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-assert.ok(!/\s/.test(html2canvasUrl), "html2canvas CDN URL must not contain whitespace");
+assert.equal(html2canvasUrl, undefined, "Share card should not depend on html2canvas CDN");
+assert.match(indexHtml, /<title>RMBTI 老板出手人格测试<\/title>/);
+assert.match(indexHtml, /<script src="\.\/qrcode\.min\.js"><\/script>/);
+
+assert.equal(config.title, "RMBTI 老板出手人格测试");
+assert.equal(config.subtitle, "测测你在场子里，是哪一张老板牌");
+assert.ok(config.introMessages.includes("正在洗牌……"));
+
+const appSource = fs.readFileSync(path.resolve(__dirname, "app.js"), "utf8");
+assert.match(appSource, /开始翻牌/);
+assert.match(appSource, /第一张牌：你出手后，最想看到什么？/);
+assert.match(appSource, /截图保存当前结果页/);
+assert.match(appSource, /主牌显影度/);
+assert.match(appSource, /rmbti_sound_enabled/);
+assert.match(appSource, /playSound/);
+assert.match(appSource, /sound-toggle/);
+assert.match(appSource, /progress-node/);
+assert.match(appSource, /洗牌中/);
 
 // Question count
 assert.equal(config.questions.length, 18, "Should have exactly 18 questions");
+
+// Hidden titles cover all 32 primary + secondary combinations
+config.secondaryOrder.forEach((secondaryId) => {
+  const template = config.combinationTemplates[secondaryId];
+  assert.equal(typeof template.sentence, "string", `${secondaryId} should have a sentence template`);
+  config.primaryOrder.forEach((primaryId) => {
+    assert.equal(
+      typeof template.hiddenTitles[primaryId],
+      "string",
+      `${primaryId}.${secondaryId} should have a hidden title`
+    );
+    assert.ok(template.hiddenTitles[primaryId].length > 0);
+  });
+});
 
 // All-A scenario
 const allA = Array(config.questions.length).fill(0);
@@ -19,6 +49,7 @@ const allAResult = engine.scoreAnswers(config, allA);
 
 assert.equal(allAResult.primaryId, "deep");
 assert.equal(allAResult.secondaryId, "timing");
+assert.equal(allAResult.hiddenTitle, "等灯偏爱者");
 assert.equal(allAResult.mirrorDetails.length, 4);
 assert.equal(allAResult.mirrorDetails[0].tone, "你需要被明确看见、被列队欢迎");
 assert.deepEqual(allAResult.primaryScores, {
@@ -38,6 +69,12 @@ assert.deepEqual(allAResult.secondaryScores, {
   timing: 7
 });
 assert.deepEqual(allAResult.mirrorTags, ["排面欢迎", "排面截图", "专属位", "灯"]);
+
+const maxScores = engine.getMaxScores(config);
+assert.equal(maxScores.primary, 21);
+assert.equal(maxScores.secondary, 17);
+assert.equal(engine.toScorePercent(allAResult.primaryScores.deep, maxScores.primary), 62);
+assert.equal(engine.toScorePercent(allAResult.secondaryScores.timing, maxScores.secondary), 41);
 
 // Card images exist
 config.primaryOrder.forEach((id) => {

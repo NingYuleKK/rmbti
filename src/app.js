@@ -5,6 +5,8 @@
 
   const PICOPICO_LOGO = "../assets/picopico_logo.png";
   const QR_URL = "https://rmbti-test-9bcmtdkn.manus.space/src/index.html";
+  const SCORE_MAX = engine.getMaxScores(config);
+  const SOUND_STORAGE_KEY = "rmbti_sound_enabled";
 
   /* 主牌中文名映射（用于 PicoPico 广告文案） */
   const PRIMARY_CN = {
@@ -17,15 +19,73 @@
     currentQuestionIndex: 0,
     answers: Array(config.questions.length).fill(null),
     result: null,
+    introMessage: config.introMessages[0],
     isTransitioning: false,
-    isSharing: false
+    isSharing: false,
+    soundEnabled: localStorage.getItem(SOUND_STORAGE_KEY) !== "0"
   };
 
-  const pad = (value) => String(value).padStart(2, "0");
+  let introTimer = null;
+  let audioContext = null;
+
   const answeredCount = () => state.answers.filter((answer) => answer !== null).length;
+  const isDebugMode = () => new URLSearchParams(window.location.search).get("debug") === "1";
 
   const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isMobile = () => /Android|iPhone|iPad|iPod|webOS|BlackBerry/i.test(navigator.userAgent);
+
+  const renderSoundToggle = () => `
+    <button
+      class="sound-toggle ${state.soundEnabled ? "" : "is-muted"}"
+      type="button"
+      data-action="toggle-sound"
+      aria-label="${state.soundEnabled ? "关闭音效" : "开启音效"}"
+    >
+      <span class="sound-icon" aria-hidden="true"></span>
+    </button>
+  `;
+
+  const getAudioContext = () => {
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return null;
+    if (!audioContext) audioContext = new AudioCtor();
+    return audioContext;
+  };
+
+  const playSound = (type) => {
+    if (!state.soundEnabled) return;
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const settings = {
+      select: { frequency: 880, duration: 0.12, gain: 0.045 },
+      flip: { frequency: 420, duration: 0.18, gain: 0.035 },
+      complete: { frequency: 260, duration: 0.32, gain: 0.055 },
+      reveal: { frequency: 180, duration: 0.44, gain: 0.065 }
+    }[type];
+    if (!settings) return;
+
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = type === "reveal" ? "triangle" : "sine";
+    oscillator.frequency.setValueAtTime(settings.frequency, ctx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(settings.frequency * 0.72, ctx.currentTime + settings.duration);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(settings.gain, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + settings.duration);
+    oscillator.connect(gain).connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + settings.duration);
+  };
+
+  const vibrate = (pattern) => {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  };
+
+  const toggleSound = () => {
+    state.soundEnabled = !state.soundEnabled;
+    localStorage.setItem(SOUND_STORAGE_KEY, state.soundEnabled ? "1" : "0");
+    render();
+  };
 
   const setView = (view) => {
     state.view = view;
@@ -33,27 +93,39 @@
   };
 
   const reset = () => {
+    if (introTimer) window.clearTimeout(introTimer);
     state.currentQuestionIndex = 0;
     state.answers = Array(config.questions.length).fill(null);
     state.result = null;
+    state.introMessage = config.introMessages[0];
     state.isTransitioning = false;
     state.isSharing = false;
     setView("home");
   };
 
   const start = () => {
+    if (introTimer) window.clearTimeout(introTimer);
     state.currentQuestionIndex = 0;
     state.answers = Array(config.questions.length).fill(null);
     state.result = null;
+    state.introMessage = config.introMessages[Math.floor(Math.random() * config.introMessages.length)];
     state.isTransitioning = false;
     state.isSharing = false;
-    setView("question");
+    setView("intro");
+    playSound("flip");
+    introTimer = window.setTimeout(() => {
+      introTimer = null;
+      playSound("flip");
+      setView("question");
+    }, 3400);
   };
 
   const choose = (optionIndex, optionButton) => {
     if (state.isTransitioning) return;
     state.isTransitioning = true;
     state.answers[state.currentQuestionIndex] = optionIndex;
+    playSound("select");
+    vibrate(12);
     optionButton?.classList.add("is-picked");
     optionButton?.closest(".question-panel")?.classList.add("is-exiting");
 
@@ -61,12 +133,18 @@
       state.isTransitioning = false;
       if (state.currentQuestionIndex < config.questions.length - 1) {
         state.currentQuestionIndex += 1;
+        playSound("flip");
         render();
         return;
       }
       state.result = engine.scoreAnswers(config, state.answers);
+      playSound("complete");
+      vibrate([20, 30, 40]);
       setView("loading");
-      window.setTimeout(() => setView("result"), 1700);
+      window.setTimeout(() => {
+        playSound("reveal");
+        setView("result");
+      }, 1700);
     }, 180);
   };
 
@@ -82,6 +160,7 @@
   const renderHome = () => {
     app.innerHTML = `
       <section class="screen home-screen">
+        ${renderSoundToggle()}
         <div class="ambient-card" aria-hidden="true">
           ${config.homeCardIds
             .map((id) => {
@@ -102,7 +181,28 @@
           <div class="helper-row">
             ${config.helper.map((item) => `<span>${item}</span>`).join("")}
           </div>
-          <button class="primary-button" type="button" data-action="start">开始测试</button>
+          <button class="primary-button" type="button" data-action="start">开始翻牌</button>
+        </div>
+      </section>
+    `;
+  };
+
+  const renderIntro = () => {
+    app.innerHTML = `
+      <section class="screen intro-screen">
+        ${renderSoundToggle()}
+        <div class="intro-oracle" aria-hidden="true">
+          <div class="intro-card intro-card-left"><span>R</span></div>
+          <div class="intro-card intro-card-main"><span>MBTI</span></div>
+          <div class="intro-card intro-card-right"><span>老板牌</span></div>
+          <span class="coin-spark coin-spark-one"></span>
+          <span class="coin-spark coin-spark-two"></span>
+          <span class="coin-spark coin-spark-three"></span>
+        </div>
+        <div class="intro-copy">
+          <p class="eyebrow">ENTER THE TABLE</p>
+          <h2>${state.introMessage}</h2>
+          <p>请坐稳，第一张老板牌马上翻开。</p>
         </div>
       </section>
     `;
@@ -110,20 +210,19 @@
 
   const renderQuestion = () => {
     const question = config.questions[state.currentQuestionIndex];
-    const progress = ((state.currentQuestionIndex + 1) / config.questions.length) * 100;
     const selectedAnswer = state.answers[state.currentQuestionIndex];
     const isFirstQuestion = state.currentQuestionIndex === 0;
 
     app.innerHTML = `
       <section class="screen question-screen">
+        ${renderSoundToggle()}
         <header class="question-header">
           ${isFirstQuestion ? '<span></span>' : '<button class="ghost-button" type="button" data-action="back">上一题</button>'}
-          <div class="question-count">${pad(state.currentQuestionIndex + 1)}/${pad(config.questions.length)}</div>
+          <div class="question-count">第 ${state.currentQuestionIndex + 1} / ${config.questions.length} 张牌</div>
         </header>
-        <div class="progress-track" aria-label="答题进度">
-          <div class="progress-fill" style="width: ${progress}%"></div>
-        </div>
-        <article class="question-panel">
+        ${renderCoinProgress()}
+        <article class="question-panel question-type-${question.type}">
+          ${isFirstQuestion ? '<p class="question-kicker">第一张牌：你出手后，最想看到什么？</p>' : ""}
           <h2>${question.prompt}</h2>
           <div class="options">
             ${question.options
@@ -146,6 +245,7 @@
   const renderLoading = () => {
     app.innerHTML = `
       <section class="screen loading-screen">
+        ${renderSoundToggle()}
         <div class="loader-card">
           <div class="flip-loader" aria-hidden="true">
             <div class="flip-loader-card">
@@ -166,6 +266,69 @@
       .map((id) => `<li><span>${defs[id].name}</span><strong>${scores[id]}</strong></li>`)
       .join("");
 
+  const progressStage = () => {
+    const number = state.currentQuestionIndex + 1;
+    if (number <= 5) return "洗牌中";
+    if (number <= 10) return "主牌显影";
+    if (number <= 15) return "副签归位";
+    return "等待翻牌";
+  };
+
+  const renderCoinProgress = () => {
+    const completed = answeredCount();
+    return `
+      <div class="coin-progress" aria-label="金币进度条">
+        ${config.questions
+          .map((_, index) => {
+            const classes = [
+              "progress-node",
+              index < completed ? "is-complete" : "",
+              index === state.currentQuestionIndex ? "is-current" : "",
+              [4, 9, 14, 17].includes(index) && index < completed ? "is-milestone" : ""
+            ].filter(Boolean).join(" ");
+            return `<span class="${classes}"></span>`;
+          })
+          .join("")}
+      </div>
+      <p class="progress-stage">${progressStage()}</p>
+    `;
+  };
+
+  const scoreVisibilityMarkup = (result) => {
+    const primary = config.primary[result.primaryId];
+    const secondary = config.secondary[result.secondaryId];
+    const primaryPercent = engine.toScorePercent(result.primaryScores[result.primaryId], SCORE_MAX.primary);
+    const secondaryPercent = engine.toScorePercent(result.secondaryScores[result.secondaryId], SCORE_MAX.secondary);
+
+    if (isDebugMode()) {
+      return `
+        <div class="score-grid">
+          <div>
+            <h3>主牌分数</h3>
+            <ol>${scoreRows(config.primary, result.primaryRanking, result.primaryScores)}</ol>
+          </div>
+          <div>
+            <h3>副签分数</h3>
+            <ol>${scoreRows(config.secondary, result.secondaryRanking, result.secondaryScores)}</ol>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="score-grid visibility-grid">
+        <div>
+          <h3>主牌显影度</h3>
+          <p><span>${primary.name}</span><strong>${primaryPercent}%</strong></p>
+        </div>
+        <div>
+          <h3>副签显影度</h3>
+          <p><span>${secondary.name}</span><strong>${secondaryPercent}%</strong></p>
+        </div>
+      </div>
+    `;
+  };
+
   const mirrorMarkup = (result) => `
     <div class="mirror-pills">
       ${result.mirrorDetails.map((item) => `<span>${item.tag}</span>`).join("")}
@@ -180,6 +343,7 @@
 
     app.innerHTML = `
       <section class="screen result-screen" style="--card-color: ${primary.color}; --card-accent: ${primary.accent};">
+        ${renderSoundToggle()}
         <article class="result-card">
           <div class="oracle-card">
             <div class="card-frame">
@@ -189,6 +353,7 @@
           <div class="result-copy">
             <p class="eyebrow">你的老板人格是</p>
             <h1>${result.combinationName}</h1>
+            <p class="hidden-title">隐藏称号：${result.hiddenTitle}</p>
             <p class="verdict">${result.combinationSentence}</p>
             <section class="reading-block">
               <h2>${primary.name} ${primary.code}</h2>
@@ -211,16 +376,7 @@
               <h2>镜面标签</h2>
               ${mirrorMarkup(result)}
             </section>
-            <div class="score-grid">
-              <div>
-                <h3>主牌分数</h3>
-                <ol>${scoreRows(config.primary, result.primaryRanking, result.primaryScores)}</ol>
-              </div>
-              <div>
-                <h3>副签分数</h3>
-                <ol>${scoreRows(config.secondary, result.secondaryRanking, result.secondaryScores)}</ol>
-              </div>
-            </div>
+            ${scoreVisibilityMarkup(result)}
             <div class="result-actions">
               <button class="primary-button" type="button" data-action="share" ${state.isSharing ? "disabled" : ""}>${state.isSharing ? "正在生成分享卡片..." : "分享"}</button>
               <button class="ghost-button" type="button" data-action="reset">再测一次</button>
@@ -359,7 +515,7 @@
     ctx.textBaseline = "top";
     ctx.fillStyle = GOLD;
     ctx.font = "900 28px " + FONT;
-    ctx.fillText("直播老板 RMBTI 人格测试", W / 2, curY);
+    ctx.fillText("RMBTI 老板出手人格测试", W / 2, curY);
     curY += 28 + 28;
 
     // ── 3. 卡牌图片 ──
@@ -410,7 +566,13 @@
     ctx.fillText(result.combinationName, W / 2, curY);
     curY += 56 + 16;
 
-    // ── 6. 一句话解读 ──
+    // ── 6. 隐藏称号 ──
+    ctx.fillStyle = MUTED;
+    ctx.font = "600 24px " + FONT;
+    ctx.fillText("隐藏称号：" + result.hiddenTitle, W / 2, curY);
+    curY += 24 + 14;
+
+    // ── 7. 一句话解读 ──
     ctx.fillStyle = TEXT;
     ctx.font = "400 26px " + FONT;
     ctx.textAlign = "center";
@@ -418,7 +580,7 @@
     const sentenceH = wrapText(ctx, result.combinationSentence, W / 2, curY, sentenceMaxW, 42);
     curY += sentenceH + 16;
 
-    // ── 7. 逆鳞 ──
+    // ── 8. 逆鳞 ──
     ctx.fillStyle = GOLD;
     ctx.font = "700 22px " + FONT;
     ctx.textAlign = "center";
@@ -430,7 +592,7 @@
     const turnoffH = wrapText(ctx, primary.turnoff, W / 2, curY, sentenceMaxW, 38);
     curY += turnoffH + 20;
 
-    // ── 8. 镜面标签（pill 样式） ──
+    // ── 9. 镜面标签（pill 样式） ──
     const pills = result.mirrorDetails.map((d) => d.tag);
     ctx.font = "600 22px " + FONT;
     const pillPadX = 20;
@@ -479,7 +641,7 @@
     ctx.textBaseline = "top";
     curY += 12;
 
-    // ── 9. PicoPico 广告模块 ──
+    // ── 10. PicoPico 广告模块 ──
     const adX = 54;
     const adW = W - 108;
     const adH = 112;
@@ -514,7 +676,7 @@
     wrapText(ctx, adText, adTextX, adY + 28, adTextMaxW, 34);
     curY = adY + adH + 24;
 
-    // ── 10. 分隔线 ──
+    // ── 11. 分隔线 ──
     ctx.strokeStyle = "rgba(214, 177, 93, 0.32)";
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -523,7 +685,22 @@
     ctx.stroke();
     curY += 24;
 
-    // ── 11. 二维码 ──
+    // ── 12. 分享挑逗文案 ──
+    ctx.fillStyle = TEXT;
+    ctx.font = "500 24px " + FONT;
+    ctx.textAlign = "center";
+    const shareLines = [
+      "我测出来是「" + result.combinationName + "」",
+      primary.turnoff,
+      "来测测你是哪张老板牌。"
+    ];
+    shareLines.forEach((line) => {
+      const lineH = wrapText(ctx, line, W / 2, curY, W - 108, 36);
+      curY += lineH;
+    });
+    curY += 12;
+
+    // ── 13. 二维码 ──
     const qrBoxSize = 140;
     const qrBoxX = (W - qrBoxSize) / 2;
     const qrBoxY = curY;
@@ -539,12 +716,12 @@
     } catch (e) { /* QR 失败，白底即可 */ }
     curY = qrBoxY + qrBoxSize + 14;
 
-    // ── 12. 扫码提示 ──
+    // ── 14. 扫码提示 ──
     ctx.fillStyle = GOLD;
     ctx.font = "600 22px " + FONT;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText("扫码测测你是哪种老板", W / 2, curY);
+    ctx.fillText("扫码测测你是哪张老板牌", W / 2, curY);
 
     return canvas;
   };
@@ -557,6 +734,23 @@
       <button class="share-overlay-close" type="button">&times;</button>
       <img src="${dataUrl}" alt="分享卡片" />
       <p class="share-overlay-hint">长按图片保存到相册</p>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector(".share-overlay-close").addEventListener("click", () => {
+      overlay.remove();
+    });
+  };
+
+  const showShareFallback = () => {
+    const overlay = document.createElement("div");
+    overlay.className = "share-overlay share-fallback";
+    overlay.innerHTML = `
+      <button class="share-overlay-close" type="button">&times;</button>
+      <div class="share-fallback-panel">
+        <p class="eyebrow">SAVE RESULT</p>
+        <h2>截图保存当前结果页</h2>
+        <p>当前浏览器拦截了分享图生成。请关闭弹窗后直接截屏结果页，或换用系统浏览器再试一次。</p>
+      </div>
     `;
     document.body.appendChild(overlay);
     overlay.querySelector(".share-overlay-close").addEventListener("click", () => {
@@ -590,7 +784,11 @@
       }
     } catch (error) {
       console.error("[RMBTI] Share card generation failed:", error?.message || error, error?.stack || "");
-      window.alert("分享卡生成失败：" + (error?.message || "未知错误") + "\n请刷新后重试。");
+      if (isIOS() || isMobile()) {
+        showShareFallback();
+      } else {
+        window.alert("分享卡生成失败：" + (error?.message || "未知错误") + "\n请刷新后重试。");
+      }
     } finally {
       state.isSharing = false;
       render();
@@ -599,6 +797,7 @@
 
   const render = () => {
     if (state.view === "home") renderHome();
+    if (state.view === "intro") renderIntro();
     if (state.view === "question") renderQuestion();
     if (state.view === "loading") renderLoading();
     if (state.view === "result") renderResult();
@@ -612,6 +811,7 @@
     if (actionTarget?.dataset.action === "back") back();
     if (actionTarget?.dataset.action === "reset") reset();
     if (actionTarget?.dataset.action === "share") downloadShareCard();
+    if (actionTarget?.dataset.action === "toggle-sound") toggleSound();
     if (optionTarget) choose(Number(optionTarget.dataset.option), optionTarget);
   });
 

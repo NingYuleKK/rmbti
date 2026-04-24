@@ -153,10 +153,58 @@
   };
 
   const combinationTemplates = {
-    burst: "{primaryName}·爆冲的你，平时未必时时亮牌，但真到{desire}被点燃的那一秒，你会把力道一次拉满。",
-    steady: "{primaryName}·常陪的你，不靠一时热闹证明自己，而是用很多个夜晚把{desire}慢慢坐实。",
-    heroic: "{primaryName}·豪侠的你，出手不只是为了自己爽，也会把{desire}变成整个场子都能感到的气势。",
-    timing: "{primaryName}·卡点的你，不乱冲，但很会挑时机；你要的是在最值得的一刻，让{desire}被所有人看见。"
+    burst: {
+      sentence: "{primaryName}·爆冲的你，平时未必时时亮牌，但真到{desire}被点燃的那一秒，你会把力道一次拉满。",
+      hiddenTitles: {
+        deep: "烈焰偏爱者",
+        saver: "绝地翻盘手",
+        ctrl: "闪电操盘手",
+        loyal: "烈焰守夜人",
+        myth: "一夜封神者",
+        rare: "孤品猎手",
+        king: "闪电君王",
+        clutch: "极限终结者"
+      }
+    },
+    steady: {
+      sentence: "{primaryName}·常陪的你，不靠一时热闹证明自己，而是用很多个夜晚把{desire}慢慢坐实。",
+      hiddenTitles: {
+        deep: "守夜偏爱者",
+        saver: "长线翻盘手",
+        ctrl: "长线操盘手",
+        loyal: "长明守夜人",
+        myth: "连载封神者",
+        rare: "年鉴收藏家",
+        king: "常驻君王",
+        clutch: "迟来终结者"
+      }
+    },
+    heroic: {
+      sentence: "{primaryName}·豪侠的你，出手不只是为了自己爽，也会把{desire}变成整个场子都能感到的气势。",
+      hiddenTitles: {
+        deep: "暖场偏爱者",
+        saver: "全场翻盘手",
+        ctrl: "全场操盘手",
+        loyal: "暖场守夜人",
+        myth: "全场封神者",
+        rare: "全场收藏家",
+        king: "全场君王",
+        clutch: "全场终结者"
+      }
+    },
+    timing: {
+      sentence: "{primaryName}·卡点的你，不乱冲，但很会挑时机；你要的是在最值得的一刻，让{desire}被所有人看见。",
+      hiddenTitles: {
+        deep: "等灯偏爱者",
+        saver: "精准翻盘手",
+        ctrl: "节点操盘手",
+        loyal: "等灯守夜人",
+        myth: "定格封神者",
+        rare: "限时收藏家",
+        king: "等灯君王",
+        clutch: "精准终结者"
+      }
+    }
   };
 
   const mirrorTagTone = {
@@ -313,9 +361,15 @@
   ];
 
   const config = {
-    title: "直播老板 RMBTI 人格测试",
-    subtitle: "测测你是哪种老板人格",
+    title: "RMBTI 老板出手人格测试",
+    subtitle: "测测你在场子里，是哪一张老板牌",
     helper: ["2-3 分钟", "18 题", "主牌 + 副签"],
+    introMessages: [
+      "正在洗牌……",
+      "正在读取你的出手气场……",
+      "主牌即将显影……",
+      "请进入老板席。"
+    ],
     homeCardIds: ["king", "deep", "myth"],
     primaryOrder,
     secondaryOrder,
