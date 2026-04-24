@@ -4,7 +4,7 @@
   const app = document.querySelector("#app");
 
   const PICOPICO_LOGO = "../assets/picopico_logo.png";
-  const QR_URL = "https://rmbti-test-9bcmtdkn.manus.space/src/index.html";
+  const QR_URL = window.location.href.split("?")[0];
   const DIMENSION_MAX = engine.getMaxScores(config);
   const SOUND_STORAGE_KEY = "rmbti_sound_enabled";
 
@@ -290,7 +290,7 @@
               "progress-node",
               index < completed ? "is-complete" : "",
               index === state.currentQuestionIndex ? "is-current" : "",
-              [4, 9, 14, 17].includes(index) && index < completed ? "is-milestone" : ""
+              [3, 7, 11].includes(index) && index < completed ? "is-milestone" : ""
             ].filter(Boolean).join(" ");
             return `<span class="${classes}"></span>`;
           })

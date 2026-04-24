@@ -15,6 +15,10 @@ assert.match(liteHtml, /<script src="\.\/app-lite\.js"><\/script>/);
 
 assert.match(liteAppSource, /RMBTI_LITE_CONFIG/);
 assert.doesNotMatch(liteAppSource, /RMBTI_CONFIG/);
+assert.match(liteAppSource, /window\.location\.href\.split\("\?"\)\[0\]/);
+assert.doesNotMatch(liteAppSource, /rmbti-test-9bcmtdkn\.manus\.space/);
+assert.match(liteAppSource, /\[3, 7, 11\]\.includes\(index\)/);
+assert.doesNotMatch(liteAppSource, /\[4, 9, 14, 17\]\.includes\(index\)/);
 assert.doesNotMatch(liteAppSource, /isDebugMode/);
 assert.doesNotMatch(liteAppSource, /主牌分数/);
 
