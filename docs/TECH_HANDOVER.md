@@ -20,16 +20,16 @@
 
 | ID | 需求 | 优先级 | 状态 | 详细 Spec |
 |----|------|--------|------|-----------|
-| P0-1 | 标题改为"RMBTI 老板出手人格测试"，副标题改为"测测你在场子里，是哪一张老板牌"，按钮改为"开始翻牌" | P0 | 待开发 | PHASE2_CODEX_SPEC.md §P0-1 |
-| P0-2 | 封面到测试之间加入场翻牌过场页（2.5-4 秒动画） | P0 | 待开发 | PHASE2_CODEX_SPEC.md §P0-2 |
+| P0-1 | 标题改为"RMBTI 老板出手人格测试"，副标题改为"测测你在场子里，是哪一张老板牌"，按钮改为"开始翻牌" | P0 | ✅ 已完成 | PHASE2_CODEX_SPEC.md §P0-1 |
+| P0-2 | 封面到测试之间加入场翻牌过场页（2.5-4 秒动画） | P0 | ✅ 已完成 | PHASE2_CODEX_SPEC.md §P0-2 |
 | P0-3 | 分享卡片在真实部署环境验证并修复 | P0 | 待验证 | PHASE2_CODEX_SPEC.md §P0-3 |
-| P0-4 | 分享卡片内容优化（加挑逗性文案 + 用户结果动态插入） | P0 | 待开发 | PHASE2_CODEX_SPEC.md §P0-4 |
-| P0-5 | 生产环境隐藏具体分数，改为显影度百分比 | P0 | 待开发 | PHASE2_CODEX_SPEC.md §P0-5 |
-| P0-6 | 隐藏称号系统（32 个主牌×副签组合称号） | P0 | 待开发 | PHASE2_CODEX_SPEC.md §P0-6 |
-| P1-1 | 题目页氛围化（牌面风格、金边卡片选项、不同题型视觉差异） | P1 | 待开发 | PHASE2_CODEX_SPEC.md §P1-1 |
-| P1-2 | 选中答案反馈 + 轻音效 + 静音开关 | P1 | 待开发 | PHASE2_CODEX_SPEC.md §P1-2 |
-| P1-3 | 金币进度条 + 阶段文案 | P1 | 待开发 | PHASE2_CODEX_SPEC.md §P1-3 |
-| P1-4 | 结果页翻牌动画（1.5-2 秒显影效果） | P1 | 待开发 | PHASE2_CODEX_SPEC.md §P1-4 |
+| P0-4 | 分享卡片内容优化（加挑逗性文案 + 用户结果动态插入） | P0 | ✅ 已完成 | PHASE2_CODEX_SPEC.md §P0-4 |
+| P0-5 | 生产环境隐藏具体分数，改为显影度百分比 | P0 | ✅ 已完成 | PHASE2_CODEX_SPEC.md §P0-5 |
+| P0-6 | 隐藏称号系统（32 个主牌×副签组合称号） | P0 | ✅ 已完成 | PHASE2_CODEX_SPEC.md §P0-6 |
+| P1-1 | 题目页氛围化（牌面风格、金边卡片选项、不同题型视觉差异） | P1 | ✅ 已完成 | PHASE2_CODEX_SPEC.md §P1-1 |
+| P1-2 | 选中答案反馈 + 轻音效 + 静音开关 | P1 | ✅ 已完成 | PHASE2_CODEX_SPEC.md §P1-2 |
+| P1-3 | 金币进度条 + 阶段文案 | P1 | ✅ 已完成 | PHASE2_CODEX_SPEC.md §P1-3 |
+| P1-4 | 结果页翻牌动画（1.5-2 秒显影效果） | P1 | 🔲 未实现（留给研发） | PHASE2_CODEX_SPEC.md §P1-4 |
 | FUTURE-1 | 站内装扮推荐系统（测完推荐头像框/座驾） | Future | 待 PicoPico 研发 | OPS_DELIVERY_SPEC.md §一 |
 | FUTURE-2 | 站外落地页引导（URL 参数传递分享者结果） | Future | 待 PicoPico 研发 | OPS_DELIVERY_SPEC.md §二 |
 | FUTURE-3 | 数据埋点接入 | Future | 待 PicoPico 研发 | OPS_DELIVERY_SPEC.md §五 |
