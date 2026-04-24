@@ -2,8 +2,10 @@
 
 > **最后更新**：2026-04-24
 > **仓库**：github.com/NingYuleKK/rmbti (Private)
-> **永久预览**：https://rmbti-test-9bcmtdkn.manus.space/src/index.html
-> **当前分支**：main（commit d0dcbb2）
+> **永久线上地址**：https://rmbtitest-hhnnvwew.manus.space
+> **直接访问**：https://rmbtitest-hhnnvwew.manus.space/app/index.html
+> **当前分支**：main（commit 5926b89）
+> **总代码量**：约 2878 行（app.js 837 + data.js 393 + engine.js 204 + styles.css 1234 + engine.test.js 193 + index.html 17）
 
 ---
 
@@ -13,13 +15,54 @@ RMBTI 是一个面向语音直播平台 **PicoPico** 老板用户（高消费用
 
 **不是心理学量表**，而是一个**社交消费人格剧场**。测试核心是：**你花钱时最想买到什么感觉，以及你通常怎么出手。**
 
-最终结果以 **主牌人格 + 副签出手方式** 呈现，如"君临·卡点""深情·常陪"。
+最终结果以 **主牌人格 + 副签出手方式 + 隐藏称号** 呈现，如"君临·卡点"+"等灯君王"。
 
 **五一期间**将在 PicoPico 站内外投放，用于老板测试 + 分享拉新 + 短信召回。
 
 ---
 
-## 二、技术架构
+## 二、当前功能完成状态
+
+### 已完成（Phase 1 + Phase 2 全部）
+
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| 18 道场景题测试 | ✅ 已完成 | 主牌题 + 副签题 + 镜面题，场景化文案不漏底 |
+| 8 种主牌人格 + 4 种副签 | ✅ 已完成 | 32 种组合，每种有独立文案和隐藏称号 |
+| 入场翻牌过场页 | ✅ 已完成 | 3.4 秒动画，支持跳过（按钮 + 点击空白） |
+| 题目页氛围化 | ✅ 已完成 | 牌面风格、金边卡片选项、不同题型视觉差异 |
+| 选中反馈 + 音效 | ✅ 已完成 | Web Audio API 合成音效，零网络开销，静音开关 |
+| 金币进度条 + 阶段文案 | ✅ 已完成 | 蹦金币特效，4 阶段文案 |
+| 显影度（替代原始分数） | ✅ 已完成 | 按维度精确计算百分比，debug 模式保留原始分数 |
+| 隐藏称号系统 | ✅ 已完成 | 32 个主牌×副签组合称号 |
+| 逆鳞文案 | ✅ 已完成 | 8 主牌 + 4 副签，江湖气老板口吻 |
+| 镜面标签 | ✅ 已完成 | 4 道 mirror 题，不计分，润色结果页 |
+| 返回上一题 | ✅ 已完成 | 选项高亮正确 |
+| 分享卡片（Canvas 手绘） | ✅ 已完成 | 品牌标题/卡牌图/人格名称/逆鳞/镜面标签/PicoPico 广告/二维码 |
+| PicoPico 广告模块 | ✅ 已完成 | Logo + 动态文案"下载 PicoPico，即可激活你的【{主牌}】版老板座驾" |
+| 永久部署 | ✅ 已完成 | rmbtitest-hhnnvwew.manus.space |
+
+### 已知问题（需研发验证）
+
+| 编号 | 问题 | 严重度 | 状态 | 说明 |
+|------|------|--------|------|------|
+| BUG-1 | 分享卡片在 manus.space 的 iframe 环境下 iOS Safari 生成失败 | P0 | 待验证 | manus.space 通过 iframe/proxy 提供服务导致 canvas tainted。**在真实部署环境（自有域名、非 iframe proxy）下大概率能正常工作**，研发接手后需在真实环境重新验证。代码已有降级方案（截图提示）。 |
+| BUG-2 | iOS Safari 不支持 `<a download>` 自动下载 | P2 | 已绕过 | 改为全屏展示 + 长按保存提示 |
+
+### 未实现（留给研发）
+
+| 功能 | 说明 | 参考文档 |
+|------|------|---------|
+| 结果页翻牌动画 | 1.5-2 秒显影效果 | PHASE2_CODEX_SPEC.md §P1-4 |
+| 站内装扮推荐 | 测完推荐头像框/座驾 | OPS_DELIVERY_SPEC.md §一 |
+| 站外落地页引导 | URL 参数传递分享者结果 | OPS_DELIVERY_SPEC.md §二 |
+| 数据埋点接入 | 关键节点埋点 | TECH_HANDOVER.md §5.5 |
+| 后端 API 接入 | 用户身份、结果存储、奖励发放 | TECH_HANDOVER.md §三/四 |
+| 短信召回文案 | "你的老板牌还没翻" | OPS_DELIVERY_SPEC.md §三 |
+
+---
+
+## 三、技术架构
 
 ### 技术栈
 
@@ -27,43 +70,45 @@ RMBTI 是一个面向语音直播平台 **PicoPico** 老板用户（高消费用
 
 ### 设计原则
 
-**配置驱动**：人格定义、题目、选项、计分规则、结果文案全部在 `data.js` 中配置，修改内容不需要改逻辑代码。
+**配置驱动**：人格定义、题目、选项、计分规则、结果文案、隐藏称号全部在 `data.js` 中配置，修改内容不需要改逻辑代码。
 
 ### 文件结构
 
 ```
 rmbti/
-├── README.md                    # 项目简介
+├── HANDOVER.md                    # 项目交接文档（本文档）
+├── README.md                      # 项目简介
 ├── assets/
-│   ├── cards/                   # 8 张主牌卡牌图（webp 格式）
-│   │   ├── card_clutch.webp
-│   │   ├── card_ctrl.webp
-│   │   ├── card_deep.webp
-│   │   ├── card_king.webp
-│   │   ├── card_loyal.webp
-│   │   ├── card_myth.webp
-│   │   ├── card_rare.webp
-│   │   └── card_saver.webp
-│   └── picopico_logo.png        # PicoPico Logo（分享卡片用）
+│   ├── cards/                     # 8 张主牌卡牌图（webp 格式）
+│   └── picopico_logo.png          # PicoPico Logo（分享卡片用）
 ├── docs/
-│   ├── ACCEPTANCE_CARD.md       # 验收口径卡
-│   ├── DESIGN_SPEC.md           # 美术设计规范
-│   ├── OPS_DELIVERY_SPEC.md     # 运营交付 Spec（五一投放用）
-│   ├── PHASE2_CODEX_SPEC.md     # Phase 2 开发 Spec（P0+P1 需求）
-│   └── PRD_V1.md                # 初版 PRD
+│   ├── ACCEPTANCE_CARD.md         # 验收口径卡
+│   ├── DESIGN_SPEC.md             # 美术设计规范
+│   ├── OPS_DELIVERY_SPEC.md       # 运营交付 Spec（五一投放用）
+│   ├── PHASE2_CODEX_SPEC.md       # Phase 2 开发 Spec（P0+P1 需求，已完成）
+│   ├── PHASE2_REVIEW.md           # Phase 2 架构层 Review 报告
+│   ├── PHASE2_REVIEW_FEEDBACK.md  # Phase 2 Review 反馈（已修复）
+│   ├── PRD_V1.md                  # 初版 PRD
+│   └── TECH_HANDOVER.md           # 技术交接（实现细节/建表/扩展能力）
 └── src/
-    ├── index.html               # 入口页
-    ├── app.js                   # 主应用逻辑（渲染、状态管理、分享卡片）
-    ├── data.js                  # 题目、人格定义、组合模板、配置（核心数据文件）
-    ├── engine.js                # 计分引擎（纯函数，不依赖 DOM）
-    ├── engine.test.js           # 引擎单元测试（Node.js 可直接运行）
-    ├── styles.css               # 全部样式
-    └── qrcode.min.js            # 二维码生成库（本地化，不依赖 CDN）
+    ├── index.html                 # 入口页
+    ├── app.js                     # 主应用逻辑（渲染、状态管理、音效、分享卡片）
+    ├── data.js                    # 题目、人格定义、组合模板、隐藏称号、配置
+    ├── engine.js                  # 计分引擎（纯函数，含显影度计算）
+    ├── engine.test.js             # 引擎单元测试
+    ├── styles.css                 # 全部样式（含入场过场、金币进度条、牌面选项）
+    └── qrcode.min.js              # 二维码生成库（本地化）
+```
+
+### 加载顺序
+
+```
+qrcode.min.js → data.js → engine.js → app.js
 ```
 
 ---
 
-## 三、人格体系
+## 四、人格体系
 
 ### 主牌（8 种）— 花钱时最想买到什么感觉
 
@@ -87,58 +132,50 @@ rmbti/
 | heroic | 豪侠 | 出手带气氛，全场受益 |
 | timing | 卡点 | 精准挑时机，一击到位 |
 
-### 镜面标签
+### 隐藏称号（32 种）
 
-4 道 mirror 题不计分，只记录用户选择的标签（如"排面欢迎""CP 截图""潜伏位""河"），用于润色结果页。
+每个主牌×副签组合有一个隐藏称号，如：
+- king × burst = "等灯君王"
+- king × timing = "一击封神"
+- deep × steady = "烈焰偏爱者"
+- rare × timing = "孤品猎手"
 
-### 组合名称
+完整 32 个称号定义在 `data.js` 的 `hiddenTitles` 字段中。
 
-主牌中文名 + "·" + 副签中文名，如"君临·卡点"。共 8×4=32 种组合。
+### 逆鳞文案
+
+江湖气、老板口吻、俯瞰判决感：
+
+**主牌逆鳞**：
+- king：我的光环，汝等竟敢视而不见。
+- deep：辜负深情的人，一文不值。
+- rare：满大街都有的东西，配不上我的眼光。
+- loyal：不值得我久留的地方，我转身就走。
+- myth：没有故事的夜晚，不配有我在场。
+- saver：该翻盘的局翻不了，是你们不争气。
+- ctrl：不听调度的场子，不值得我费心。
+- clutch：最后一击没人能收，是这局不配有结尾。
 
 ---
 
-## 四、计分引擎
+## 五、计分引擎
 
-引擎代码在 `src/engine.js`，是纯函数，不依赖 DOM，可用 Node.js 直接测试。
+引擎代码在 `src/engine.js`，纯函数，不依赖 DOM，可用 Node.js 直接测试。
 
-### 题目类型
+### 核心函数
 
-| 类型 | 说明 | 计分目标 |
-|------|------|---------|
-| `primary_regular` | 主牌常规题 | 主牌 +3（主分）+1（副分） |
-| `primary_discriminator` | 主牌决胜题 | 主牌 +5（主分）+1（副分），平分时作为 tiebreaker |
-| `primary_turnoff` | 主牌逆鳞题 | 主牌 +4，平分时作为第二 tiebreaker |
-| `secondary_regular` | 副签常规题 | 副签 +2 或 +3 |
-| `mirror` | 镜面题 | 不计分，只记录标签 |
-
-### 当前 18 题分布
-
-| 题号 | 类型 | 题目简述 |
-|------|------|---------|
-| Q1 | primary_regular | 刷了一波大的，最想看到啥？ |
-| Q2 | secondary_regular | 喜欢什么风格的座驾？ |
-| Q3 | mirror | 进房间最想要哪种待遇？ |
-| Q4 | secondary_regular | 花钱的节奏是哪一种？ |
-| Q5 | secondary_regular | 最下头的主播行为？ |
-| Q6 | secondary_regular | 最喜欢什么样的主播？ |
-| Q7 | primary_regular | 房间里突然冷场了，你会？ |
-| Q8 | primary_regular | 主播给你专属待遇，你最想要啥？ |
-| Q9 | secondary_regular | 喜欢什么风格的房间？ |
-| Q10 | mirror | 今晚只能截一张图，你截哪个？ |
-| Q11 | primary_turnoff | 哪种情况让你直接不玩了？ |
-| Q12 | primary_discriminator | 哪种爽感最对你胃口？ |
-| Q13 | secondary_regular | 你的昵称是哪种风格？ |
-| Q14 | mirror | 在房间里喜欢待在什么地方？ |
-| Q15 | secondary_regular | 对各种榜单、活动的态度？ |
-| Q16 | mirror | 你在语音房的风格更像哪个？ |
-| Q17 | secondary_regular | 直播在你生活里扮演什么角色？ |
-| Q18 | primary_regular | 主播 PK 要输了，你会？ |
+| 函数 | 说明 |
+|------|------|
+| `scoreAnswers(config, answers)` | 主计分函数，返回完整结果对象 |
+| `getMaxScores(config)` | 按维度精确计算每个人格的理论最高分 |
+| `toScorePercent(score, maxScore)` | 计算显影度百分比 |
+| `buildHiddenTitle(config, primaryId, secondaryId)` | 查找隐藏称号 |
+| `buildCombinationSentence(config, primaryId, secondaryId)` | 生成组合描述句 |
+| `buildMirrorSentence(config, mirrorTags)` | 生成镜面标签综合描述 |
 
 ### Tiebreaker 机制
 
 主牌平分时：先比 discriminator 题（Q12）得分 → 再比 turnoff 题（Q11）得分 → 再按 primaryOrder 顺序取第一个。
-
-副签平分时：先比 turnoff 题得分 → 再比高权重命中次数 → 再按 secondaryOrder 顺序取第一个。
 
 ### 运行测试
 
@@ -146,115 +183,79 @@ rmbti/
 node src/engine.test.js
 ```
 
+### Debug 模式
+
+URL 加 `?debug=1` 可在结果页显示原始分数（生产环境只显示显影度百分比）。
+
 ---
 
-## 五、应用逻辑（app.js）
+## 六、版本历史
 
-### 状态管理
+| 版本 | Commit | 日期 | 说明 |
+|------|--------|------|------|
+| v1 | — | 2026-04-22 | 初版 20 题，基础 UI，分享卡片 |
+| v2 | — | 2026-04-23 | 题目重设计为 19 题，缓存 bug 修复，去掉分类标签，返回上一题 |
+| v3 | — | 2026-04-23 | 18 题全量更新，新增 Q6 正面题，删除原 Q14/Q18，逆鳞文案替换 |
+| v3.1 | — | 2026-04-23 | 分享卡片：品牌标题/卡牌图/人格名称/逆鳞/镜面标签/PicoPico 广告/二维码 |
+| v3.2 | — | 2026-04-24 | 分享卡片改用纯 Canvas API，QRCode 本地化 |
+| Phase 2 | e67d06c | 2026-04-24 | 入场过场页、题目牌化、音效、金币进度条、显影度、隐藏称号 |
+| Phase 2 Fix | 5926b89 | 2026-04-24 | 显影度改为按维度精确计算，intro 加跳过能力 |
 
-全局 `state` 对象：
+---
 
-```javascript
-state = {
-  view: "home" | "quiz" | "result",  // 当前页面
-  currentQuestion: 0,                 // 当前题号（0-indexed）
-  answers: [],                        // 用户选择（每题一个 label: "A"/"B"/"C"/"D"）
-  result: null,                       // 计分结果对象
-  isSharing: false                    // 是否正在生成分享卡片
-}
+## 七、文档索引
+
+| 文档 | 路径 | 说明 | 目标读者 |
+|------|------|------|---------|
+| 项目交接总览 | `HANDOVER.md` | 项目全貌（本文档） | 所有人 |
+| 技术交接 | `docs/TECH_HANDOVER.md` | 实现细节、建表结构、扩展能力、API 设计 | 研发 |
+| Phase 2 开发 Spec | `docs/PHASE2_CODEX_SPEC.md` | P0+P1 需求详细描述（已完成） | 研发 |
+| Phase 2 Review | `docs/PHASE2_REVIEW.md` | 架构层 Review 报告 | 研发 |
+| 运营交付 Spec | `docs/OPS_DELIVERY_SPEC.md` | 装扮映射、短信文案、站外引导、埋点 | 运营 + 研发 |
+| 美术设计规范 | `docs/DESIGN_SPEC.md` | 卡牌风格、配色、构图 | 设计 |
+| 初版 PRD | `docs/PRD_V1.md` | 产品定位、交互结构、结果模型 | 产品 |
+| 验收口径卡 | `docs/ACCEPTANCE_CARD.md` | 验收标准 | 产品 + 研发 |
+
+---
+
+## 八、研发接手建议
+
+### 优先级排序
+
+1. **在真实环境验证分享卡片**（BUG-1）— 部署到自有域名后测试 iOS Safari
+2. **接入数据埋点** — 测试开始/答题/完成/分享/重测
+3. **结果页翻牌动画** — 1.5-2 秒显影效果
+4. **后端 API 接入** — 用户身份、结果存储（建表结构见 TECH_HANDOVER.md §四）
+5. **站内装扮推荐** — 测完推荐头像框/座驾（映射表见 OPS_DELIVERY_SPEC.md §一）
+6. **站外落地页引导** — URL 参数传递分享者结果
+7. **短信召回** — "你的老板牌还没翻"
+
+### 本地开发
+
+```bash
+git clone git@github.com:NingYuleKK/rmbti.git
+cd rmbti
+open src/index.html
+# 或
+npx serve src -p 3000
 ```
 
-### 渲染流程
+### 调试计分
 
-`render()` 函数根据 `state.view` 调用对应渲染函数：
-- `renderHome()` → 首页
-- `renderQuiz()` → 答题页（含返回上一题功能）
-- `renderResult()` → 结果页
-
-### 分享卡片
-
-`drawShareCard()` 函数用纯 Canvas 2D API 手工绘制分享卡片（不依赖 html2canvas）。包含：品牌标题、卡牌图、人格名称、短解读、逆鳞、镜面标签、PicoPico 广告（Logo + 动态文案）、二维码。
+浏览器控制台：
+```javascript
+console.log(state);  // 当前状态
+const result = RMBTI_ENGINE.scoreAnswers(RMBTI_CONFIG, state.answers);
+console.log(result);  // 计分结果
+```
 
 ---
 
-## 六、样式（styles.css）
-
-- 整体风格：黑金暗色主题
-- 配色：深色背景（#0f0f1a ~ #1a1a2e）+ 金色强调（#d4a843）+ 白色文字
-- 卡牌图：Art Deco 金线牌框风格
-- 响应式：移动端优先，375px 基准
-
----
-
-## 七、逆鳞文案
-
-每个主牌和副签都有一条"逆鳞"文案，江湖气、老板口吻、俯瞰判决感：
-
-**主牌逆鳞**：
-- deep：辜负深情的人，一文不值。
-- saver：该翻盘的局翻不了，是你们不争气。
-- ctrl：不听调度的场子，不值得我费心。
-- loyal：不值得我久留的地方，我转身就走。
-- myth：没有故事的夜晚，不配有我在场。
-- rare：满大街都有的东西，配不上我的眼光。
-- king：我的光环，汝等竟敢视而不见。
-- clutch：最后一击没人能收，是这局不配有结尾。
-
-**副签逆鳞**：
-- burst：我这一把梭出去，场子接不住，是你们的问题。
-- steady：我天天在的地方，居然不记得我？那是你们不配。
-- heroic：我把气氛托到这份上了，你们还冷着？不识抬举。
-- timing：我看准的时机从不浪费，浪费的是你们不懂配合。
-
----
-
-## 八、已知问题
-
-| 编号 | 问题 | 严重度 | 状态 |
-|------|------|--------|------|
-| BUG-1 | 分享卡片在 iOS Safari/微信浏览器生成失败 | P0 | 未修复。manus.space iframe 环境导致 canvas tainted。真实部署环境（非 iframe proxy）下需重新验证，大概率能跑。 |
-| BUG-2 | iOS Safari 不支持 `<a download>` | P2 | 已绕过。改为全屏展示 + 长按保存提示。 |
-
----
-
-## 九、版本历史
-
-| 版本 | 日期 | 说明 |
-|------|------|------|
-| v1 | 2026-04-22 | 初版 20 题，基础 UI，分享卡片 |
-| v2 | 2026-04-23 | 题目重设计为 19 题，缓存 bug 修复，去掉分类标签，返回上一题 |
-| v3 | 2026-04-23 | 18 题全量更新，新增 Q6 正面题，删除原 Q14/Q18，逆鳞文案替换 |
-| v3.1 | 2026-04-23 | 分享卡片功能：品牌标题/卡牌图/人格名称/逆鳞/镜面标签/PicoPico 广告/二维码 |
-| v3.2 | 2026-04-24 | 分享卡片改用纯 Canvas API，QRCode 本地化 |
-| v3.3 | 2026-04-24 | Phase 2 Spec 文档推送（PHASE2_CODEX_SPEC.md + OPS_DELIVERY_SPEC.md） |
-
----
-
-## 十、下一步（Phase 2）
-
-详见 `docs/PHASE2_CODEX_SPEC.md`，核心需求：
-
-**P0（最高优先级）**：
-1. 标题改为"RMBTI 老板出手人格测试"
-2. 封面到测试之间加入场翻牌过场页
-3. 分享卡片修复（在真实部署环境验证）
-4. 分享卡片内容优化（加挑逗性文案）
-5. 生产环境隐藏分数，改为显影度
-6. 隐藏称号系统（32 个组合称号）
-
-**P1（第二优先级）**：
-7. 题目页氛围化（牌面风格、金边卡片选项）
-8. 选中反馈 + 轻音效 + 静音开关
-9. 金币进度条 + 阶段文案
-10. 结果页翻牌动画
-
----
-
-## 十一、关键联系人
+## 九、关键联系人
 
 | 角色 | 代号 | 职责 |
 |------|------|------|
 | Litch | CEO / 产品 Owner | 需求定义、最终验收 |
 | 子敬 | 架构师 / 中枢管理 | PRD、任务拆分、Code Review |
-| Codex | 开发执行 | 根据 Spec 写代码 |
-| Root (GPT Pro) | 外部评审 | 风险扫描、架构建议 |
+| Codex | 开发执行 | Phase 2 代码实现 |
+| Root (GPT Pro) | 外部评审 | 产品建议、运营策略 |
