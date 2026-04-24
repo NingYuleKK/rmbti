@@ -6,6 +6,12 @@
   const PICOPICO_LOGO = "../assets/picopico_logo.png";
   const QR_URL = "https://rmbti-test-9bcmtdkn.manus.space/src/index.html";
 
+  /* 主牌中文名映射（用于 PicoPico 广告文案） */
+  const PRIMARY_CN = {
+    deep: "深情", saver: "逆转", ctrl: "掌盘", loyal: "长情",
+    myth: "神话", rare: "典藏", king: "君临", clutch: "绝杀"
+  };
+
   const state = {
     view: "home",
     currentQuestionIndex: 0,
@@ -167,47 +173,6 @@
     <p>${result.mirrorSentence}</p>
   `;
 
-  // Helper: convert hex to rgba for html2canvas compatibility (no color-mix support)
-  const hexToRgba = (hex, alpha) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
-
-  const shareCardMarkup = (result, primary, secondary) => {
-    const glowColor = hexToRgba(primary.accent, 0.28);
-    const borderColor = hexToRgba(primary.accent, 0.7);
-    return `
-    <section id="share-card" class="share-card" style="--card-color: ${primary.color}; --card-accent: ${primary.accent}; --share-accent-glow: ${glowColor}; --share-border-color: ${borderColor};">
-      <div class="share-card-inner">
-        <p class="share-brand">直播老板 RMBTI 人格测试</p>
-        <img class="share-card-image" src="${primary.imageSrc}" alt="${primary.name} ${primary.code} 卡牌" crossorigin="anonymous" />
-        <div class="share-persona">
-          <span class="share-persona-label">你的老板人格是</span>
-          <span class="share-persona-name">${result.combinationName}</span>
-        </div>
-        <p class="share-sentence">${result.combinationSentence}</p>
-        <div class="share-turnoff">
-          <span class="share-turnoff-label">逆鳞</span>
-          <span class="share-turnoff-text">${primary.turnoff}</span>
-        </div>
-        <div class="share-mirror-pills">
-          ${result.mirrorDetails.map((item) => `<span>${item.tag}</span>`).join("")}
-        </div>
-        <div class="share-ad">
-          <img class="share-ad-logo" src="${PICOPICO_LOGO}" alt="PicoPico" crossorigin="anonymous" />
-          <span class="share-ad-text">下载 PicoPico，即可激活你的【${primary.name}】版老板座驾</span>
-        </div>
-        <div class="share-qr-section">
-          <div class="share-qr-box" id="share-qr-container"></div>
-          <p class="share-qr-hint">扫码测测你是哪种老板</p>
-        </div>
-      </div>
-    </section>
-  `;
-  };
-
   const renderResult = () => {
     const result = state.result || engine.scoreAnswers(config, state.answers);
     const primary = config.primary[result.primaryId];
@@ -261,71 +226,330 @@
               <button class="ghost-button" type="button" data-action="reset">再测一次</button>
             </div>
           </div>
-          ${shareCardMarkup(result, primary, secondary)}
         </article>
       </section>
     `;
-
-    // Generate real QR code in the share card
-    generateQRCode();
   };
 
-  const generateQRCode = () => {
-    const container = document.getElementById("share-qr-container");
-    if (!container || !window.QRCode) return;
-    container.innerHTML = "";
-    new window.QRCode(container, {
-      text: QR_URL,
-      width: 124,
-      height: 124,
-      colorDark: "#000000",
-      colorLight: "#ffffff",
-      correctLevel: window.QRCode.CorrectLevel.M
-    });
-  };
+  /* ══════════════════════════════════════════════════════════════
+     纯 Canvas API 手绘分享卡片（完全不依赖 html2canvas / DOM 截图）
+     ══════════════════════════════════════════════════════════════ */
 
-  // Convert an image URL to base64 data URL via canvas to avoid CORS issues with html2canvas
-  const imgToBase64 = (src) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        try {
-          const cvs = document.createElement("canvas");
-          cvs.width = img.naturalWidth;
-          cvs.height = img.naturalHeight;
-          cvs.getContext("2d").drawImage(img, 0, 0);
-          resolve(cvs.toDataURL("image/png"));
-        } catch (e) {
-          resolve(src); // fallback to original
-        }
-      };
-      img.onerror = () => resolve(src); // fallback to original
-      img.src = src;
-    });
-  };
-
-  // Convert all images in the share card to inline base64 data URLs
-  const inlineShareImages = async (shareCard) => {
-    const images = [...shareCard.querySelectorAll("img")];
-    await Promise.all(
-      images.map(async (image) => {
-        // Wait for image to load first
-        if (!image.complete) {
-          await new Promise((resolve) => {
-            image.addEventListener("load", resolve, { once: true });
-            image.addEventListener("error", () => resolve(), { once: true });
+  /** 加载图片，返回 Promise<HTMLImageElement>。优先用 fetch+blob 绕过跨域 */
+  const loadImage = (src) => {
+    return new Promise((resolve, reject) => {
+      if (typeof fetch !== "undefined") {
+        fetch(src, { mode: "cors", credentials: "same-origin" })
+          .then((r) => {
+            if (!r.ok) throw new Error("fetch failed");
+            return r.blob();
+          })
+          .then((blob) => {
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("blob img fail: " + src)); };
+            img.src = url;
+          })
+          .catch(() => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error("img load fail: " + src));
+            img.src = src;
           });
-        }
-        // Convert to base64 data URL
-        if (image.src && !image.src.startsWith("data:")) {
-          const base64 = await imgToBase64(image.src);
-          image.src = base64;
-        }
-      })
-    );
+      } else {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("img load fail: " + src));
+        img.src = src;
+      }
+    });
   };
 
+  /** 在 canvas 上绘制自动换行文字，返回实际绘制的总高度 */
+  const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
+    const chars = text.split("");
+    let line = "";
+    let curY = y;
+    for (let i = 0; i < chars.length; i++) {
+      const testLine = line + chars[i];
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && line.length > 0) {
+        ctx.fillText(line, x, curY);
+        line = chars[i];
+        curY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    if (line) ctx.fillText(line, x, curY);
+    return curY + lineHeight - y;
+  };
+
+  /** 绘制圆角矩形路径 */
+  const roundRect = (ctx, x, y, w, h, r) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  };
+
+  /** 生成 QR 码 canvas 元素 */
+  const generateQRCanvas = () => {
+    return new Promise((resolve) => {
+      if (!window.QRCode) { resolve(null); return; }
+      const tempDiv = document.createElement("div");
+      tempDiv.style.cssText = "position:fixed;left:-9999px;top:0;";
+      document.body.appendChild(tempDiv);
+      new window.QRCode(tempDiv, {
+        text: QR_URL, width: 124, height: 124,
+        colorDark: "#000000", colorLight: "#ffffff",
+        correctLevel: window.QRCode.CorrectLevel.M
+      });
+      setTimeout(() => {
+        const qrCanvas = tempDiv.querySelector("canvas");
+        resolve(qrCanvas || null);
+        tempDiv.remove();
+      }, 100);
+    });
+  };
+
+  /** 主函数：用纯 Canvas 2D API 手绘分享卡片 */
+  const drawShareCard = async (result, primary) => {
+    const W = 750;
+    const H = 1500;
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+
+    // ── 1. 背景渐变 ──
+    const bgGrad = ctx.createLinearGradient(0, 0, W * 0.4, H);
+    bgGrad.addColorStop(0, "#1a1a2e");
+    bgGrad.addColorStop(0.58, "#0f0f1a");
+    bgGrad.addColorStop(1, "#0f0f1a");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // 径向渐变光晕（主牌 accent）
+    const accent = primary.accent || "#d6b15d";
+    const radGrad = ctx.createRadialGradient(W / 2, H * 0.08, 0, W / 2, H * 0.08, 340);
+    radGrad.addColorStop(0, accent + "47");
+    radGrad.addColorStop(1, "transparent");
+    ctx.fillStyle = radGrad;
+    ctx.fillRect(0, 0, W, H * 0.4);
+
+    const GOLD = "#f4d78c";
+    const TEXT = "#fbf7ec";
+    const MUTED = "#b9ad95";
+    const FONT = "'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC',sans-serif";
+    let curY = 56;
+
+    // ── 2. 品牌标题 ──
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillStyle = GOLD;
+    ctx.font = "900 28px " + FONT;
+    ctx.fillText("直播老板 RMBTI 人格测试", W / 2, curY);
+    curY += 28 + 28;
+
+    // ── 3. 卡牌图片 ──
+    const cardW = 340;
+    const cardH = 510;
+    const cardX = (W - cardW) / 2;
+    const cardY = curY;
+
+    try {
+      const cardImg = await loadImage(primary.imageSrc);
+      ctx.save();
+      roundRect(ctx, cardX, cardY, cardW, cardH, 8);
+      ctx.clip();
+      ctx.drawImage(cardImg, cardX, cardY, cardW, cardH);
+      ctx.restore();
+      ctx.strokeStyle = accent + "b3";
+      ctx.lineWidth = 2;
+      roundRect(ctx, cardX, cardY, cardW, cardH, 8);
+      ctx.stroke();
+    } catch (e) {
+      ctx.fillStyle = primary.color || "#1a1a2e";
+      roundRect(ctx, cardX, cardY, cardW, cardH, 8);
+      ctx.fill();
+      ctx.strokeStyle = accent + "b3";
+      ctx.lineWidth = 2;
+      roundRect(ctx, cardX, cardY, cardW, cardH, 8);
+      ctx.stroke();
+      ctx.fillStyle = GOLD;
+      ctx.font = "900 48px " + FONT;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(primary.code, W / 2, cardY + cardH / 2);
+      ctx.textBaseline = "top";
+    }
+    curY = cardY + cardH + 28;
+
+    // ── 4. "你的老板人格是" ──
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillStyle = MUTED;
+    ctx.font = "400 24px " + FONT;
+    ctx.fillText("你的老板人格是", W / 2, curY);
+    curY += 24 + 10;
+
+    // ── 5. 人格组合名称 ──
+    ctx.fillStyle = GOLD;
+    ctx.font = "900 56px " + FONT;
+    ctx.fillText(result.combinationName, W / 2, curY);
+    curY += 56 + 16;
+
+    // ── 6. 一句话解读 ──
+    ctx.fillStyle = TEXT;
+    ctx.font = "400 26px " + FONT;
+    ctx.textAlign = "center";
+    const sentenceMaxW = W - 108;
+    const sentenceH = wrapText(ctx, result.combinationSentence, W / 2, curY, sentenceMaxW, 42);
+    curY += sentenceH + 16;
+
+    // ── 7. 逆鳞 ──
+    ctx.fillStyle = GOLD;
+    ctx.font = "700 22px " + FONT;
+    ctx.textAlign = "center";
+    ctx.fillText("逆鳞", W / 2, curY);
+    curY += 22 + 8;
+
+    ctx.fillStyle = TEXT;
+    ctx.font = "400 24px " + FONT;
+    const turnoffH = wrapText(ctx, primary.turnoff, W / 2, curY, sentenceMaxW, 38);
+    curY += turnoffH + 20;
+
+    // ── 8. 镜面标签（pill 样式） ──
+    const pills = result.mirrorDetails.map((d) => d.tag);
+    ctx.font = "600 22px " + FONT;
+    const pillPadX = 20;
+    const pillPadY = 8;
+    const pillH = 22 + pillPadY * 2;
+    const pillGap = 12;
+    const pillWidths = pills.map((t) => ctx.measureText(t).width + pillPadX * 2);
+    const pillRows = [];
+    let currentRow = [];
+    let currentRowW = 0;
+    const maxPillRowW = W - 108;
+    for (let i = 0; i < pills.length; i++) {
+      const pw = pillWidths[i];
+      if (currentRow.length > 0 && currentRowW + pillGap + pw > maxPillRowW) {
+        pillRows.push(currentRow);
+        currentRow = [{ text: pills[i], w: pw }];
+        currentRowW = pw;
+      } else {
+        currentRow.push({ text: pills[i], w: pw });
+        currentRowW += (currentRow.length > 1 ? pillGap : 0) + pw;
+      }
+    }
+    if (currentRow.length > 0) pillRows.push(currentRow);
+
+    for (const row of pillRows) {
+      const totalW = row.reduce((s, p) => s + p.w, 0) + (row.length - 1) * pillGap;
+      let px = (W - totalW) / 2;
+      for (const pill of row) {
+        const py = curY;
+        ctx.fillStyle = "rgba(214, 177, 93, 0.08)";
+        roundRect(ctx, px, py, pill.w, pillH, pillH / 2);
+        ctx.fill();
+        ctx.strokeStyle = GOLD;
+        ctx.lineWidth = 1.5;
+        roundRect(ctx, px, py, pill.w, pillH, pillH / 2);
+        ctx.stroke();
+        ctx.fillStyle = GOLD;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "600 22px " + FONT;
+        ctx.fillText(pill.text, px + pill.w / 2, py + pillH / 2);
+        px += pill.w + pillGap;
+      }
+      curY += pillH + pillGap;
+    }
+    ctx.textBaseline = "top";
+    curY += 12;
+
+    // ── 9. PicoPico 广告模块 ──
+    const adX = 54;
+    const adW = W - 108;
+    const adH = 112;
+    const adY = curY;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+    roundRect(ctx, adX, adY, adW, adH, 14);
+    ctx.fill();
+
+    const logoSize = 72;
+    const logoX = adX + 24;
+    const logoY = adY + (adH - logoSize) / 2;
+    try {
+      const logoImg = await loadImage(PICOPICO_LOGO);
+      ctx.save();
+      roundRect(ctx, logoX, logoY, logoSize, logoSize, 16);
+      ctx.clip();
+      ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+      ctx.restore();
+    } catch (e) {
+      ctx.fillStyle = "#333";
+      roundRect(ctx, logoX, logoY, logoSize, logoSize, 16);
+      ctx.fill();
+    }
+
+    const adTextX = logoX + logoSize + 18;
+    const adTextMaxW = adW - 24 - logoSize - 18 - 24;
+    const primaryCN = PRIMARY_CN[result.primaryId] || primary.name;
+    const adText = "下载 PicoPico，即可激活你的【" + primaryCN + "】版老板座驾";
+    ctx.fillStyle = TEXT;
+    ctx.font = "400 22px " + FONT;
+    ctx.textAlign = "left";
+    wrapText(ctx, adText, adTextX, adY + 28, adTextMaxW, 34);
+    curY = adY + adH + 24;
+
+    // ── 10. 分隔线 ──
+    ctx.strokeStyle = "rgba(214, 177, 93, 0.32)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(54, curY);
+    ctx.lineTo(W - 54, curY);
+    ctx.stroke();
+    curY += 24;
+
+    // ── 11. 二维码 ──
+    const qrBoxSize = 140;
+    const qrBoxX = (W - qrBoxSize) / 2;
+    const qrBoxY = curY;
+    ctx.fillStyle = "#ffffff";
+    roundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 8);
+    ctx.fill();
+
+    try {
+      const qrCanvas = await generateQRCanvas();
+      if (qrCanvas) {
+        ctx.drawImage(qrCanvas, qrBoxX + 8, qrBoxY + 8, 124, 124);
+      }
+    } catch (e) { /* QR 失败，白底即可 */ }
+    curY = qrBoxY + qrBoxSize + 14;
+
+    // ── 12. 扫码提示 ──
+    ctx.fillStyle = GOLD;
+    ctx.font = "600 22px " + FONT;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText("扫码测测你是哪种老板", W / 2, curY);
+
+    return canvas;
+  };
+
+  /* ── 全屏展示（iOS 长按保存） ── */
   const showFullscreenPreview = (dataUrl) => {
     const overlay = document.createElement("div");
     overlay.className = "share-overlay";
@@ -340,47 +564,25 @@
     });
   };
 
+  /* ── 下载/展示分享卡片（纯 Canvas API，不依赖 html2canvas） ── */
   const downloadShareCard = async () => {
-    const shareCard = document.querySelector("#share-card");
-    if (!shareCard || state.isSharing) return;
-    if (!window.html2canvas) {
-      window.alert("分享卡生成工具还没有加载完成，请稍后再试。");
-      return;
-    }
+    if (state.isSharing) return;
+    const result = state.result;
+    if (!result) return;
+    const primary = config.primary[result.primaryId];
 
     state.isSharing = true;
     render();
 
     try {
-      // Re-generate QR code after re-render
-      generateQRCode();
-
-      // Wait for QR code canvas to render
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      const activeShareCard = document.querySelector("#share-card");
-      // Convert all images to inline base64 to avoid CORS/taint issues on iOS Safari & WeChat
-      await inlineShareImages(activeShareCard);
-
-      const canvas = await window.html2canvas(activeShareCard, {
-        backgroundColor: null,
-        scale: 2,
-        useCORS: false,
-        allowTaint: true,
-        width: 750,
-        height: 1500,
-        logging: false
-      });
-
+      const canvas = await drawShareCard(result, primary);
       const dataUrl = canvas.toDataURL("image/png");
 
       if (isMobile()) {
-        // Mobile: show fullscreen preview for long-press save
         showFullscreenPreview(dataUrl);
       } else {
-        // Desktop: auto download
         const link = document.createElement("a");
-        link.download = `rmbti-${state.result.primaryId}-${state.result.secondaryId}.png`;
+        link.download = "rmbti-" + result.primaryId + "-" + result.secondaryId + ".png";
         link.href = dataUrl;
         document.body.appendChild(link);
         link.click();
